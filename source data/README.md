@@ -19,10 +19,20 @@ Labels: include
 Layout: series column  
 
 ## snb-data-zimoma-en-selection-20231002_1430.csv
+Table Name: Money market rates  
+Version: 2023-10-02  
 Retrieval Date: 21.10.2023  
-URL: https://data.snb.ch/en/topics/ziredev/cube/zimoma?fromDate=1972-01&toDate=2023-09&dimSel=D0(SARON,1TGT,EG3M)
+URL: https://data.snb.ch/en/topics/ziredev/cube/zimoma?fromDate=1972-01&toDate=2023-09&dimSel=D0(SARON,1TGT,EG3M)  
 
 
 ## snb-data-zirepo-en-all-20230921_0900.csv
+Table Name: Repo reference rates  
+Version: 2023-09-21  
 Retrieval Date: 21.10.2023  
-URL: https://data.snb.ch/en/topics/ziredev/cube/zirepo?fromDate=1999-01-01&toDate=2023-10-21&dimSel=D0(H0,H6,H7,H8,H1,H2,H3,H4,H5)
+URL: https://data.snb.ch/en/topics/ziredev/cube/zirepo?fromDate=1999-01-01&toDate=2023-10-21&dimSel=D0(H0,H6,H7,H8,H1,H2,H3,H4,H5)  
+
+## snb-data-rendoblid-en-selection-20231002_1430.csv
+Table Name: Yields on bond issues – Day  
+Version: 2023-10-02  
+Retrieval Date: 21.10.2023  
+URL: https://data.snb.ch/en/topics/ziredev/cube/rendoblid?fromDate=1988-08-30&toDate=2023-10-21&dimSel=D0(1J)  
