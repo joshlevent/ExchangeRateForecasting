@@ -18,6 +18,20 @@ File Type: csv
 Labels: include  
 Layout: series column  
 
+## FRB_H15.csv
+Organisation: Board of Governors of the Federal Reserve System (US)  
+Dataset Name: H.15 Selected Interest Rates  
+Data Series Name: Federal funds effective rate  
+Version: October 20, 2023  
+Retrieval Date: 21.10.2023  
+Dataset URL: https://www.federalreserve.gov/releases/H15/default.htm  
+Direct Download URL: https://www.federalreserve.gov/datadownload/Output.aspx?rel=H15&series=c5025f4bbbed155a6f17c587772ed69e&lastobs=&from=01/01/1971&to=10/21/2023&filetype=csv&label=include&layout=seriescolumn  
+`File Summary`  
+From 01/01/1971 to 10/21/2023  
+File Type: csv  
+Labels: include  
+Layout: series column  
+
 ## snb-data-zimoma-en-selection-20231002_1430.csv
 Table Name: Money market rates  
 Version: 2023-10-02  
