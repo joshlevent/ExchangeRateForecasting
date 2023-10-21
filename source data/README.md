@@ -4,7 +4,7 @@ This folder contains unchanged source data from various sources.
 
 Below are relevant metadata for each file. Some additional metadata can be found in the files themselves.
 
-# FRB_H10.csv
+## FRB_H10.csv
 Organisation: Board of Governors of the Federal Reserve System (US)  
 Dataset Name: G.5/H.10 - Foreign Exchange Rates  
 Data Series Name: Swiss Francs to U.S. Dollar Spot Exchange Rate  
@@ -17,3 +17,12 @@ From 01/01/1971 to 10/09/2023
 File Type: csv  
 Labels: include  
 Layout: series column  
+
+## snb-data-zimoma-en-selection-20231002_1430.csv
+Retrieval Date: 21.10.2023  
+URL: https://data.snb.ch/en/topics/ziredev/cube/zimoma?fromDate=1972-01&toDate=2023-09&dimSel=D0(SARON,1TGT,EG3M)
+
+
+## snb-data-zirepo-en-all-20230921_0900.csv
+Retrieval Date: 21.10.2023  
+URL: https://data.snb.ch/en/topics/ziredev/cube/zirepo?fromDate=1999-01-01&toDate=2023-10-21&dimSel=D0(H0,H6,H7,H8,H1,H2,H3,H4,H5)
