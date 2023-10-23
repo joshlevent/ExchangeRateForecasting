@@ -8,7 +8,7 @@ Below are relevant metadata for each file. Some additional metadata can be found
 Organisation: Board of Governors of the Federal Reserve System (US)  
 Dataset Name: G.5/H.10 - Foreign Exchange Rates  
 Data Series Name: Swiss Francs to U.S. Dollar Spot Exchange Rate  
-Frequency: Daily
+Frequency: Daily  
 Version: October 2, 2023  
 Retrieval Date: 09.10.2023  
 Dataset URL: https://www.federalreserve.gov/releases/h10/default.htm  
