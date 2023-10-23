@@ -9,4 +9,9 @@ Interest rates vary from country to country. If we expected exchange rates to fl
 
 
 
-For this we need data on interest rates for various maturities, we will try daily, weekly?, 1 month, 3 month and 1 year rates, plus the exchange rate (spot prices only).
+For this we need data on interest rates for various maturities, plus the exchange rate (spot prices only).
+
+
+We will try to gather two types of samples for interest rates:  
+Shorter samples: SARON vs SOFR, overnight rates. We expect a short term impact on exchange rates (daily, weekly) - Data available for duration: 2018-2023  
+Longer sample: monthly data, longer maturities (1 month, 3 month, 6 month, 12 month), long term impact on exchange rates (monthly, yearly) - Data available for duration: 2000 - 2023
