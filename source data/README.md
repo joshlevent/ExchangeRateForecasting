@@ -7,7 +7,7 @@ Below are relevant metadata for each file. Some additional metadata can be found
 ## FRB_H10.csv
 Organisation: Board of Governors of the Federal Reserve System (US)  
 Dataset Name: G.5/H.10 - Foreign Exchange Rates  
-Data Series Name: Swiss Francs to U.S. Dollar Spot Exchange Rate  fromt 04.01.1971 to 06.10.2023 (one dollar in xx CHF)
+Data Series Name: Swiss Francs to U.S. Dollar Spot Exchange Rate (open market price) from 04.01.1971 to 06.10.2023 : one dollar in xx CHF
 Frequency: Daily  
 Version: October 2, 2023  
 Retrieval Date: 09.10.2023  
