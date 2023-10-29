@@ -24,9 +24,10 @@ We will try to gather two types of samples for interest rates:
   
   What is SOFR : SOFR sets the rate at which banks can borrow cash from individuals or other banks overnight. The rate is collateralised by the US treasury securities market – these are bonds issued by the US government. It is established each business day around 8 a.m. by the Federal Reserve Bank of New York (around 13h in Schweizerreich) : https://www.newyorkfed.org/markets/reference-rates/sofr
   
-  Swiss Francs to U.S. Dollar Spot Exchange Rate (open market price) from 04.01.1971 to 06.10.2023 : one dollar in xx CHF : 
+  Swiss Francs to U.S. Dollar Spot Exchange Rate (open market price) from 04.01.1971 to 06.10.2023 : one dollar in xx CHF (published at 4:15 p.m - 21h15 in Schweizerland): 
   https://www.federalreserve.gov/datadownload/Output.aspx?rel=H10&series=f838388dca2fd4e8bdfb846f3d2c35df&lastobs=&from=01/01/1971&to=10/09/2023&filetype=csv&label=include&layout=seriescolumn
 
+Worries: the day's exchange rate is published at 21h15 Swiss time, the SOFR at 13h Swiss time and the Saron at 12h, 16h and 18h Swiss time.
 
 - Longer sample: monthly data, longer maturities (1 month, 3 month, 6 month, 12 month), long term impact on exchange rates (monthly, yearly) - Data available for duration: 2000 - 2023
 
