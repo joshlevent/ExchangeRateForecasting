@@ -21,9 +21,9 @@ Saron is the average interest rate at which the Swiss National Bank (SNB) and co
 
 All Saron Value per day (since 1999) : https://www.six-group.com/exchanges/indices/data_centre/swiss_reference_rates/reference_rates_en.html (very precise)
 
-Per day, 1 month,3 mont, 6 month : https://data.snb.ch/en/topics/ziredev/cube/zirepo?fromDate=1999-01-01&toDate=2023-10-21&dimSel=D0(H0,H6,H7,H8,H1,H2,H3,H4,H5)
-
 What is SOFR : 
 
 
 Longer sample: monthly data, longer maturities (1 month, 3 month, 6 month, 12 month), long term impact on exchange rates (monthly, yearly) - Data available for duration: 2000 - 2023
+
+Saron per day, 1 month,3 mont, 6 month : https://data.snb.ch/en/topics/ziredev/cube/zirepo?fromDate=1999-01-01&toDate=2023-10-21&dimSel=D0(H0,H6,H7,H8,H1,H2,H3,H4,H5)
