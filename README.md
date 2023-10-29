@@ -17,10 +17,13 @@ Shorter samples: SARON vs SOFR, overnight rates. We expect a short term impact o
 
 What is Saro :
 
-French : Le Saron est le taux d’intérêt moyen auquel la Banque nationale suisse (BNS) et les banques commerciales se prêtent mutuellement de l’argent pour la durée d’une nuit
-English : Saron is the average interest rate at which the Swiss National Bank (SNB) and commercial banks lend money to each other overnight. It is therefore very close to the SNB's key interest rate. SARON is calculated three times a day (12:00, 16:00, 18:00) by SIX and the daily reference rate is set at 18:00.
+Saron is the average interest rate at which the Swiss National Bank (SNB) and commercial banks lend money to each other overnight. It is therefore very close to the SNB's key interest rate. SARON is calculated three times a day (12:00, 16:00, 18:00) by SIX and the daily reference rate is set at 18:00.
 
-All Saron Value per day : https://www.six-group.com/exchanges/indices/data_centre/swiss_reference_rates/reference_rates_en.html
+All Saron Value per day (since 1999) : https://www.six-group.com/exchanges/indices/data_centre/swiss_reference_rates/reference_rates_en.html 
+
+Per day, 1 month,3 mont, 6 month : https://data.snb.ch/en/topics/ziredev/cube/zirepo?fromDate=1999-01-01&toDate=2023-10-21&dimSel=D0(H0,H6,H7,H8,H1,H2,H3,H4,H5)
+
+What is SOFR : 
 
 
 Longer sample: monthly data, longer maturities (1 month, 3 month, 6 month, 12 month), long term impact on exchange rates (monthly, yearly) - Data available for duration: 2000 - 2023
