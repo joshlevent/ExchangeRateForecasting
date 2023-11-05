@@ -22,7 +22,7 @@ We will try to gather two types of samples for interest rates:
   
   All Saron Value per day (since 1999) : https://www.six-group.com/exchanges/indices/data_centre/swiss_reference_rates/reference_rates_en.html (very precise)
   
-  What is SOFR : SOFR sets the rate at which banks can borrow cash from individuals or other banks overnight. The rate is collateralised by the US treasury securities market – these are bonds issued by the US government. It is established each business day around 8 a.m. by the Federal Reserve Bank of New York (around 13h in Schweizerreich). It's calculated for the previous business day's repo transactions! . : https://www.newyorkfed.org/markets/reference-rates/sofr
+  What is SOFR : SOFR sets the rate at which banks can borrow cash from individuals or other banks overnight. The rate is collateralised by the US treasury securities market – these are bonds issued by the US government. It is established each business day around 8 a.m. by the Federal Reserve Bank of New York (around 13h in Schweizerreich). The SOFR rate published on anyday represents the rate on repo transactions entered into on the previous business day and the date associated with each rate reflects the date of the underlying transactions rather than the date of publication : https://www.newyorkfed.org/medialibrary/Microsites/arrc/files/2021/users-guide-to-sofr2021-update.pdf
   
   Swiss Francs to U.S. Dollar Spot Exchange Rate (open market price) from 04.01.1971 to 06.10.2023 : one dollar in xx CHF (published at 4:15 p.m - 21h15 in Schweizerland): 
   https://www.federalreserve.gov/datadownload/Output.aspx?rel=H10&series=f838388dca2fd4e8bdfb846f3d2c35df&lastobs=&from=01/01/1971&to=10/09/2023&filetype=csv&label=include&layout=seriescolumn
