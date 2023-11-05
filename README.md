@@ -18,7 +18,7 @@ We will try to gather two types of samples for interest rates:
 
   What is Saron :
   
-  Saron is the average interest rate at which the Swiss National Bank (SNB) and commercial banks lend money to each other overnight. It is therefore very close to the SNB's key interest rate. SARON is calculated three times a day (12:00, 16:00, 18:00) by SIX and the daily reference rate is set at 18:00.
+  Saron is the average interest rate at which the Swiss National Bank (SNB) and commercial banks lend money to each other overnight. It is therefore very close to the SNB's key interest rate. SARON is calculated three times a day (12:00, 16:00, 18:00) by SIX and the daily reference rate is set at 18:00. SARON is continually calculated in real time since 6 pm the day before and published every 10 minutes. In addition, a fixing is conducted three times a day at 12pm (calculation from 6 pm before to 12 pm today), 4pm and 6pm. The 6pm fixing serves as a reference reading for derivative financial products and the valuation of financial assets. 
   
   All Saron Value per day (since 1999) : https://www.six-group.com/exchanges/indices/data_centre/swiss_reference_rates/reference_rates_en.html (very precise)
   
