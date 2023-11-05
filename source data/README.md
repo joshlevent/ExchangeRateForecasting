@@ -4,6 +4,10 @@ This folder contains unchanged source data from various sources.
 
 Below are relevant metadata for each file. Some additional metadata can be found in the files themselves.
 
+## hsrron.csv
+Organisation: SIX Group  
+Saron
+
 ## FRB_H10.csv
 Organisation: Board of Governors of the Federal Reserve System (US)  
 Dataset Name: G.5/H.10 - Foreign Exchange Rates  
