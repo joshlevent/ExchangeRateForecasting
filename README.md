@@ -37,6 +37,7 @@ We will try to gather two types of samples for interest rates:
 
   One year government bonds
 
-  Swiss : https://www.investing.com/rates-bonds/switzerland-1-year-bond-yield-historical-data (see cs files uploaded)
+  Swiss (since 1994) : https://www.investing.com/rates-bonds/switzerland-1-year-bond-yield-historical-data (see cs files uploaded)
+  USA (since 2008) : https://www.investing.com/rates-bonds/u.s.-1-year-bond-yield-historical-data
 
   Not possible to use SOFT (per day), then it's possible to use this one (not sure) ? https://www.federalreserve.gov/releases/H15/default.htm
