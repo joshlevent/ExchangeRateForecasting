@@ -7,6 +7,10 @@ Below are relevant metadata for each file. Some additional metadata can be found
 ## hsrron.csv
 Organisation: SIX Group  
 Saron
+Frequency: Daily 
+Dataset URL : https://www.six-group.com/exchanges/indices/data_centre/swiss_reference_rates/reference_rates_en.html
+Direct Download URL : https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv
+From 30.06.1999 to today
 
 ## FRB_H10.csv
 Organisation: Board of Governors of the Federal Reserve System (US)  
