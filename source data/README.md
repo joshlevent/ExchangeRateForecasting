@@ -9,14 +9,14 @@ Organisation: SIX Group
 Saron
 Frequency: Daily 
 Dataset URL : https://www.six-group.com/exchanges/indices/data_centre/swiss_reference_rates/reference_rates_en.html
-Direct Download URL : https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv
+Direct Download URL (update automaticaly) : https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv
 From 30.06.1999 to today
 
 ## SOFR.csv
 Organisation: FRED
 SOFR
 Frequency: Daily 
-Dataset URL (update automaticaly) : https://fred.stlouisfed.org/series/SOFR
+Dataset URL : https://fred.stlouisfed.org/series/SOFR
 
 Direct Download URL (update automaticaly) : https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1319&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=SOFR&scale=left&cosd=2018-04-03&coed=2024-11-09&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2024-11-12&revision_date=2024-11-12&nd=2018-04-03
 From 03.04.2018 to today
