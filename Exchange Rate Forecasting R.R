@@ -65,5 +65,9 @@ Saron  = xts(Data[,2], order.by = as.Date(paste(Data[,1],"-01", sep = "")))
 
 # Plot
 
-plot(SOFR)
+ERF <- merge(SOFR, Saron, SWISSDOLLAR, all=TRUE)
+
+ERF <- ts_span(ERF, start = "2018")
+
+plot(ERF)
 
