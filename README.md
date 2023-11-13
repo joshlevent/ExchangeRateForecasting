@@ -31,13 +31,11 @@ We will try to gather two types of samples for interest rates:
 
 - Longer sample: monthly data, longer maturities (1 month, 3 month, 6 month, 12 month), long term impact on exchange rates (monthly, yearly) - Data available for duration: 2000 - 2023
 
-  Saron per day, 1 month,3 mont, 6 month : https://data.snb.ch/en/topics/ziredev/cube/zirepo?fromDate=1999-01-01&toDate=2023-10-21&dimSel=D0(H0,H6,H7,H8,H1,H2,H3,H4,H5)
-
-  Don't use Saron (missing values)
-
   One year government bonds
 
   Swiss (since 1994) : https://www.investing.com/rates-bonds/switzerland-1-year-bond-yield-historical-data (see cs files uploaded)
   USA (since 2008) : https://www.investing.com/rates-bonds/u.s.-1-year-bond-yield-historical-data
 
   Not possible to use SOFT (per day), then it's possible to use this one (not sure) ? https://www.federalreserve.gov/releases/H15/default.htm
+
+13.11.2023 : Teacher proposess AR(1) model based just on exchange rate (ER) with forecast model that uses the covered interest rate parity to predict ER 
