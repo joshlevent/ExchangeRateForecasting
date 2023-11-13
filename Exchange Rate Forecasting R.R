@@ -56,5 +56,17 @@ Data = Data[-1,]
 
 SWISSDOLLAR  = xts(Data[,2], order.by = as.Date(paste(Data[,1],"-01", sep = "")))
 
-Saron <- read.csv("https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv")
+# Saron <- read.csv("https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv")
+
+# URL of the CSV file
+file_url <- "https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv"
+
+# Read the CSV file using read.csv from base R
+# The semicolon is specified as the separator
+# skip = 3 is used to skip the first three rows which are headers
+Saron <- read.csv(file_url, sep = ";", skip = 3, header = TRUE)
+
+# View the first few rows of the data frame
+head(Saron)
+
 
