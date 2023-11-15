@@ -69,5 +69,12 @@ ERF <- merge(SOFR, Saron, SWISSDOLLAR, all=TRUE)
 
 ERF <- ts_span(ERF, start = "2018")
 
+ERF <- ts_span(ERF, start = "2022", end ="2023") #  If you want to have the graph between 2022 and 2023
+
 plot(ERF)
 
+# Diff
+
+ERF <-diff(ERF)
+
+plot(ERF)
