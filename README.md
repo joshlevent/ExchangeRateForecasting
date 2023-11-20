@@ -43,3 +43,5 @@ We will try to gather two types of samples for interest rates:
   Not possible to use SOFT (per day), then it's possible to use this one (not sure) ? https://www.federalreserve.gov/releases/H15/default.htm
 
 13.11.2023 : Teacher proposess AR(1) model based just on exchange rate (ER) with forecast model that uses the covered interest rate parity to predict ER 
+
+We don't see effect because interested rate is expected
