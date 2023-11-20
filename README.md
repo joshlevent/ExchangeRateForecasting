@@ -1,3 +1,7 @@
+# Google working document
+
+https://docs.google.com/document/d/1BoiwtZHhprqOUOmihyyuo-lJK93lbMU6fZf5fjdrcgw/edit?usp=sharing
+
 # ExchangeRateForecasting
 We are building a simple exchange rate forecasting tool for a class project.
 
