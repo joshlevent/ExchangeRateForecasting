@@ -36,3 +36,4 @@ ERData$LogDifferenceCHFUSD <- ERData$LogCHFUSD - ERData$LaggedLogCHFUSD
 
 write.csv(ERData, file = "ExchangeRateData.csv", row.names = FALSE)
 
+yes
