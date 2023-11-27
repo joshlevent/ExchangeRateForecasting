@@ -15,9 +15,19 @@ library(zoo)
 library(purrr)
 library(lmtest)
 library(forecast)
+library(tseries)
+library(tsbox)
+library(ggplot2)
 
 # clean objects
 rm(list=ls())
+
+# Load user-defined commands and packages
+source("UserPackages.R")
+
+# Here, it executes the function and creates the folder in the current directory
+mainDir <- getwd()
+outDir <- makeOutDir(mainDir, "/ERFOutput")
 
 # Function to fetch and preprocess data
 fetch_data <- function(url, skip_rows, delimiter, date_format) {
@@ -61,6 +71,7 @@ ERData <- ERData %>% select(Date, LogDifferenceCHFUSD)
 # Combine datasets
 combinedData <- reduce(list(SARONData, SOFRData, ERData), full_join, by = "Date")
 
+
 # Identify valid date range
 first_valid_date <- combinedData %>% filter(!is.na(SARON) & !is.na(SOFR) & !is.na(LogDifferenceCHFUSD)) %>% summarize(first_date = min(Date)) %>% pull(first_date)
 last_valid_date <- combinedData %>% filter(!is.na(SARON) & !is.na(SOFR) & !is.na(LogDifferenceCHFUSD)) %>% summarize(last_date = max(Date)) %>% pull(last_date)
@@ -77,35 +88,86 @@ if (length(missing_dates) == 0) {
   print(paste("Missing dates:", missing_dates))
 }
 
+# checking whether the log difference approximation is suitable
+max(trimmedData$LogDifferenceCHFUSD, na.rm = TRUE)
+min(trimmedData$LogDifferenceCHFUSD, na.rm = TRUE)
+# Yes, the absolute values of the change are below 4% so well approximated by the log value
+
 # Calculate the interest rate differential
 trimmedData <- trimmedData %>%
   mutate(InterestRateDiff = SARON - SOFR)
 
-# Perform regression analysis
-result <- lm(LogDifferenceCHFUSD ~ InterestRateDiff, data = trimmedData)
+# split data in two
+ModelData <- trimmedData %>% select(Date, LogDifferenceCHFUSD, InterestRateDiff)
+InterestRates <- trimmedData %>% select(Date, SARON, SOFR)
+
+# unpivot the timeseries'
+ModelDataLong <- ts_long(ModelData)
+InterestRatesLong <- ts_long(InterestRates)
+
+ts_plot(ModelDataLong)
+p <- ggplot(ModelDataLong, aes(x = Date, y = value, color = id)) +
+  geom_line()
+p <- ggLayout(p) +
+  labs(title = "Exchange rates and interest rate differences for Switzerland and the United States Over Time") +
+  scale_color_manual(values = c("LogDifferenceCHFUSD" = "firebrick4", "InterestRateDiff" = "blue4"),
+                     labels = c("LogDifferenceCHFUSD" = "1-day difference in log exchange rate", "InterestRateDiff" = "Interest Rate Difference")) +
+  scale_y_continuous(breaks = seq(-6, 0, by = 0.5)) +
+  theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
+p
+ggsave(paste(outDir, "ModelData.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+
+ts_plot(InterestRatesLong)
+p <- ggplot(InterestRatesLong, aes(x = Date, y = value, color = id)) +
+  geom_line()
+p <- ggLayout(p) +
+  labs(title = "Swiss and US Interest Rates (Secured Overnight) Over Time") +
+  scale_color_manual(values = c("SARON" = "firebrick4", "SOFR" = "blue4"),
+                     labels = c("SARON" = "Switzerland", "SOFR" = "United States")) +
+  scale_y_continuous(breaks = seq(-1, 5.5, by = 0.5)) +
+  theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
+p
+ggsave(paste(outDir, "InterestRates.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+
+plotACF(ModelData$LogDifferenceCHFUSD, 365)
+ggsave(paste(outDir, "ACFExchangeRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+
+plotACF(ModelData$InterestRateDiff, 365)
+ggsave(paste(outDir, "ACFInterestRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+# !!! This is highly autocorrelated, is this a problem???
+
+p <- plotCCF(ts_ts(ModelData), ts_ts(ModelData$LogDifferenceCHFUSD), lag.max = 15)
+
+
+# Perform simple regression analysis
+result <- lm(LogDifferenceCHFUSD ~ InterestRateDiff, data = ModelData)
 summary(result)
+
+# Regression with some lags
+result2 <- lm(LogDifferenceCHFUSD ~ InterestRateDiff + lag(InterestRateDiff) + lag(InterestRateDiff, 2) + lag(InterestRateDiff, 3) + lag(InterestRateDiff, 4), data = ModelData)
+summary(result2)
 
 # Durbin-Watson test for autocorrelation
 dw_test <- dwtest(result)
 print(dw_test)
 # there is autocorrelation
 
-# You can also consider different lags, like this:
-result_lag1 <- lm(LogDifferenceCHFUSD ~ lag(InterestRateDiff, 1), data = trimmedData)
-summary(result_lag1)
-
-
-
 # Check if the series is stationary
-adf.test(trimmedData$LogDifferenceCHFUSD)
-
+adf.test(trimmedData$LogDifferenceCHFUSD, k = 365)
+# does NOT appear to be stationary (high p value means we cannot reject null 
+# hypothesis that it is not stationary)
+# Non-staionary-ness is not really an issue for ARIMA models though
 
 log_diff_ts <- ts(trimmedData$LogDifferenceCHFUSD, frequency = 365)
 
+season.test(log_diff_ts)
 
 # Fit ARIMA model
 # auto.arima automatically selects the best p, d, q parameters
-arima_model <- auto.arima(log_diff_ts)
+arima_model <- auto.arima(log_diff_ts, stepwise=FALSE, approximation=FALSE)
+
+# Open PDF document to save output
+pdf("output.pdf", width = 11.7, height = 8.3)
 
 # Summary of the model
 summary(arima_model)
@@ -117,3 +179,4 @@ checkresiduals(arima_model)
 forecast <- forecast(arima_model, h = 365)
 plot(forecast)
 
+dev.off()
