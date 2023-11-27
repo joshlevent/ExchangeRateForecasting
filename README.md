@@ -52,4 +52,4 @@ Can we do a partial regression of just the peaks in the ER diff ?
 
 Which result we present ?
 
-Arima Model is thins kind of model suitable for daily data ? Ten days moving average ? What is big P ?
+Arima Model is thins kind of model suitable for daily data ? Ten days moving average ? What is big P ? Is Arima model pertinent ?
