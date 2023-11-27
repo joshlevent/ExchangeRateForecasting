@@ -25,7 +25,7 @@ rm(list=ls())
 # Load user-defined commands and packages
 source("UserPackages.R")
 
-# Here, it executes the function and creates the folder in the current directory
+# Create an output folder in the current directory
 mainDir <- getwd()
 outDir <- makeOutDir(mainDir, "/ERFOutput")
 
@@ -34,7 +34,7 @@ fetch_data <- function(url, skip_rows, delimiter, date_format) {
   response <- GET(url)
   data <- content(response, "text")
   df <- read_delim(data, delim = delimiter, skip = skip_rows, na = c("", "ND", "."), col_names = c("Date", "Value"))
-  
+  # the following part fills in missing dates and interpolates the data
   if (nrow(df) > 0) {
     df$Date <- as.Date(df$Date, format = date_format)
     date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
@@ -61,7 +61,7 @@ ERData <- ERData %>%
   mutate(USDCHF = 1 / Value,
          LogCHFUSD = log(USDCHF),
          LaggedLogCHFUSD = lag(LogCHFUSD),
-         LogDifferenceCHFUSD = LogCHFUSD - LaggedLogCHFUSD)
+         LogDifferenceCHFUSD = (LogCHFUSD - LaggedLogCHFUSD) * 100)
 
 # Select relevant columns
 SARONData <- SARONData %>% select(Date, SARON = Value)
@@ -117,6 +117,19 @@ p <- ggLayout(p) +
 p
 ggsave(paste(outDir, "ModelData.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 
+# only exchange rate difference
+p <- ggplot(ModelData, aes(x = Date, y = LogDifferenceCHFUSD)) +
+  geom_line()
+p <- ggLayout(p) +
+  labs(title = "Exchange rate difference Switzerland and the United States Over Time") +
+  scale_color_manual(values = c("LogDifferenceCHFUSD" = "firebrick4"),
+                     labels = c("LogDifferenceCHFUSD" = "1-day difference in log exchange rate")) +
+  scale_y_continuous(breaks = seq(-1, 0, by = 0.5)) +
+  theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
+p
+
+
+
 ts_plot(InterestRatesLong)
 p <- ggplot(InterestRatesLong, aes(x = Date, y = value, color = id)) +
   geom_line()
@@ -131,21 +144,33 @@ ggsave(paste(outDir, "InterestRates.pdf", sep = "/"), plot = last_plot(), width 
 
 plotACF(ModelData$LogDifferenceCHFUSD, 365)
 ggsave(paste(outDir, "ACFExchangeRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+# Question, should we try to do a decomposition of the ER diff
+
+# expect some AR in 300 cases
 
 plotACF(ModelData$InterestRateDiff, 365)
 ggsave(paste(outDir, "ACFInterestRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 # !!! This is highly autocorrelated, is this a problem???
 
 p <- plotCCF(ts_ts(ModelData), ts_ts(ModelData$LogDifferenceCHFUSD), lag.max = 15)
-
+# doesn't work yet, do we need a CCF?
 
 # Perform simple regression analysis
 result <- lm(LogDifferenceCHFUSD ~ InterestRateDiff, data = ModelData)
 summary(result)
+# Can we do a partial regression of just the peaks in the ER diff
+
+# Need to check AR of residuals
+# the effect of the period of 
 
 # Regression with some lags
 result2 <- lm(LogDifferenceCHFUSD ~ InterestRateDiff + lag(InterestRateDiff) + lag(InterestRateDiff, 2) + lag(InterestRateDiff, 3) + lag(InterestRateDiff, 4), data = ModelData)
 summary(result2)
+
+# Regression with lagged ER
+result3 <- lm(LogDifferenceCHFUSD ~ lag(LogDifferenceCHFUSD) + InterestRateDiff + lag(InterestRateDiff) + lag(InterestRateDiff, 2) + lag(InterestRateDiff, 3) + lag(InterestRateDiff, 4), data = ModelData)
+summary(result3)
+# expected result, because 1 period lag is autocorrelated
 
 # Durbin-Watson test for autocorrelation
 dw_test <- dwtest(result)
@@ -156,15 +181,23 @@ print(dw_test)
 adf.test(trimmedData$LogDifferenceCHFUSD, k = 365)
 # does NOT appear to be stationary (high p value means we cannot reject null 
 # hypothesis that it is not stationary)
-# Non-staionary-ness is not really an issue for ARIMA models though
+# Non-stationary-ness is not really an issue for ARIMA models though
+# use the code from the application, if either value is not stationary we will have another look
+
 
 log_diff_ts <- ts(trimmedData$LogDifferenceCHFUSD, frequency = 365)
 
 season.test(log_diff_ts)
+# test for seasonality, doesn't work yet, don't think it's needed
 
 # Fit ARIMA model
 # auto.arima automatically selects the best p, d, q parameters
-arima_model <- auto.arima(log_diff_ts, stepwise=FALSE, approximation=FALSE)
+arima_model <- auto.arima(log_diff_ts, stepwise=TRUE, approximation=TRUE)
+# is this kind of model suitable for daily data
+
+arima_model <- auto.arima(log_diff_ts, max.p = 30, max.P = 30, max.q = 30, 
+                          max.Q = 30, stepwise=FALSE, approximation=TRUE, 
+                          num.cores = 6, max.D = 3, max.d = 3)
 
 # Open PDF document to save output
 pdf("output.pdf", width = 11.7, height = 8.3)
@@ -180,3 +213,15 @@ forecast <- forecast(arima_model, h = 365)
 plot(forecast)
 
 dev.off()
+
+# I think we need to make both time-series stationary and then we can use a
+# normal regression
+
+# rolling forecast from App 7
+
+# conclusion in paper of what we learned
+
+# restrict period to only 2 days before and after interest rate changes
+
+# a random walk forecast would be a reasonable benchmark
+# use AIC
