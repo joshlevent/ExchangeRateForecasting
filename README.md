@@ -45,3 +45,13 @@ We will try to gather two types of samples for interest rates:
 13.11.2023 : Teacher proposess AR(1) model based just on exchange rate (ER) with forecast model that uses the covered interest rate parity to predict ER 
 
 We don't see effect because interested rate is expected
+
+Kaufmann : Should we try to do a decomposition of the ER diff ?
+
+Can we do a partial regression of just the peaks in the ER diff ?
+
+Which result we present ?
+
+How do we do the prediction using the exchange rate using the interest rate ?
+
+Arima Model is thins kind of model suitable for daily data ? Ten days moving average ? What is big P ? Is Arima model pertinent ?
