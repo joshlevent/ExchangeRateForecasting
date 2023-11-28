@@ -18,6 +18,7 @@ library(forecast)
 library(tseries)
 library(tsbox)
 library(ggplot2)
+library(CADFtest)
 
 # clean objects
 rm(list=ls())
@@ -112,23 +113,41 @@ p <- ggLayout(p) +
   labs(title = "Exchange rates and interest rate differences for Switzerland and the United States Over Time") +
   scale_color_manual(values = c("LogDifferenceCHFUSD" = "firebrick4", "InterestRateDiff" = "blue4"),
                      labels = c("LogDifferenceCHFUSD" = "1-day difference in log exchange rate", "InterestRateDiff" = "Interest Rate Difference")) +
-  scale_y_continuous(breaks = seq(-6, 0, by = 0.5)) +
+  scale_y_continuous(breaks = seq(-6, 4, by = 0.5)) +
   theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
 p
 ggsave(paste(outDir, "ModelData.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 
-# only exchange rate difference
-p <- ggplot(ModelData, aes(x = Date, y = LogDifferenceCHFUSD)) +
+# zoom table
+ModelDataLong_filtered <- ModelDataLong %>%
+  filter(Date >= as.Date("2020-03-01") & Date <= as.Date("2020-03-31"))
+p <- ggplot(ModelDataLong_filtered, aes(x = Date, y = value, color = id)) +
   geom_line()
 p <- ggLayout(p) +
-  labs(title = "Exchange rate difference Switzerland and the United States Over Time") +
-  scale_color_manual(values = c("LogDifferenceCHFUSD" = "firebrick4"),
-                     labels = c("LogDifferenceCHFUSD" = "1-day difference in log exchange rate")) +
-  scale_y_continuous(breaks = seq(-1, 0, by = 0.5)) +
+  labs(title = "Exchange rates and interest rate differences for Switzerland and the United States Over Time") +
+  scale_color_manual(values = c("LogDifferenceCHFUSD" = "firebrick4", "InterestRateDiff" = "blue4"),
+                     labels = c("LogDifferenceCHFUSD" = "1-day difference in log exchange rate", "InterestRateDiff" = "Interest Rate Difference")) +
+  scale_y_continuous(breaks = seq(-6, 4, by = 0.5)) +
   theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
 p
 
+ModelDataLong_filtered <- ModelDataLong %>%
+  filter(Date >= as.Date("2021-06-01") & Date <= as.Date("2021-07-31"))
+p <- ggplot(ModelDataLong_filtered, aes(x = Date, y = value, color = id)) +
+  geom_line()
+p <- ggLayout(p) +
+  labs(title = "Exchange rates and interest rate differences for Switzerland and the United States Over Time") +
+  scale_color_manual(values = c("LogDifferenceCHFUSD" = "firebrick4", "InterestRateDiff" = "blue4"),
+                     labels = c("LogDifferenceCHFUSD" = "1-day difference in log exchange rate", "InterestRateDiff" = "Interest Rate Difference")) +
+  scale_y_continuous(breaks = seq(-6, 4, by = 0.5)) +
+  theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
+p
 
+# check for stationarity with u Root test
+uRootCPI = CADFtest(ModelData$LogDifferenceCHFUSD, max.lag.y = 10, type = "trend", criterion = "BIC")
+summary(uRootCPI)
+uRootCPId = CADFtest(ModelData$InterestRateDiff, max.lag.y = 10, type = "drift", criterion = "BIC")
+summary(uRootCPId)
 
 ts_plot(InterestRatesLong)
 p <- ggplot(InterestRatesLong, aes(x = Date, y = value, color = id)) +
@@ -144,9 +163,7 @@ ggsave(paste(outDir, "InterestRates.pdf", sep = "/"), plot = last_plot(), width 
 
 plotACF(ModelData$LogDifferenceCHFUSD, 365)
 ggsave(paste(outDir, "ACFExchangeRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
-# Question, should we try to do a decomposition of the ER diff
-
-# expect some AR in 300 cases
+# there is some AC, but we expect some in 300 cases
 
 plotACF(ModelData$InterestRateDiff, 365)
 ggsave(paste(outDir, "ACFInterestRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
