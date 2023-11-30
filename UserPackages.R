@@ -41,7 +41,7 @@ makeOutDir <- function(mainDir, outDir){
   } else {
     dir.create(file.path(mainDir, outDir))
   }
-  return(paste(mainDir, outDir , sep="")) # combines the stringe mainDir and outDir with seperation "" (i.e. w/o any separation)
+  return(paste(mainDir, outDir , sep="/")) # combines the stringe mainDir and outDir with seperation "" (i.e. w/o any separation)
 }
 
 

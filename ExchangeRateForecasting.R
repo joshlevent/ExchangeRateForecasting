@@ -8,18 +8,27 @@
 # ------------------------------------------------------------------------------
 # 0) Packages and functions that we need
 # ------------------------------------------------------------------------------
-library(httr)
 library(readr)
+library(httr)
+library(xts)
 library(dplyr)
-library(lubridate)
-library(zoo)
-library(purrr)
-library(lmtest)
-library(forecast)
-library(tseries)
+# NOTE WELL: DPLYR and XTS require two different implementations of the lag() 
+# function. Call these explicitly like this: dplyr::lag(df), stats::lag(xts)
 library(tsbox)
-library(ggplot2)
+library(purrr)
 library(CADFtest)
+library(ggplot2)
+library(tidyr)
+library(forecast)
+
+# library(tseries)
+# 
+# library(lubridate)
+# library(lmtest)
+
+# library(quantmod)
+
+
 
 # clean objects
 rm(list=ls())
@@ -70,7 +79,7 @@ write(data, file = filename)
 
 # parse the file contents and save to objects
 df = read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"), 
-              col_select = c(1,2))
+              na = c("", "ND", "."))
 SOFR = xts(df$Value, order.by = df$Date) 
 SOFRData = select(df, Date, Value)
 
@@ -87,7 +96,7 @@ write(data, file = filename)
 
 # parse the file contents and save to objects
 df = read_csv(data, skip = 6, col_types = "Dd", col_names = c("Date", "Value"), 
-              col_select = c(1,2))
+              na = c("", "ND", "."))
 ER = xts(df$Value, order.by = df$Date) 
 ERData = select(df, Date, Value)
 
@@ -96,7 +105,7 @@ ERData <- ERData %>%
   mutate(USDCHF = 1 / Value,
          LogCHFUSD = log(USDCHF),
          ForwardLogCHFUSD = lead(LogCHFUSD),
-         LogDifferenceCHFUSD = (LogCHFUSD - ForwardLogCHFUSD) * 100)
+         LogDifferenceCHFUSD = (ForwardLogCHFUSD - LogCHFUSD) * 100)
 
 # 1.4 Swiss Policy Actions
 # Get new data
@@ -219,9 +228,6 @@ trimmedData <- trimmedData %>%
 IRdifferential = xts(trimmedData$InterestRateDiff, order.by = trimmedData$Date)
 ERd = xts(trimmedData$LogDifferenceCHFUSD, order.by = trimmedData$Date)
 
-#ModelData <- trimmedData %>% select(Date, LogDifferenceCHFUSD, InterestRateDiff)
-#InterestRates <- trimmedData %>% select(Date, SARON, SOFR)
-
 # check for stationarity with u Root test
 uRootER = CADFtest(ERd, max.lag.y = 10, type = "drift", criterion = "BIC")
 summary(uRootER)
@@ -235,10 +241,6 @@ IRdifferential_d = IRdifferential - lag(IRdifferential)
 uRootFDIR = CADFtest(IRdifferential_d, max.lag.y = 10, type = "drift", criterion = "BIC")
 summary(uRootFDIR)
 # great, this is now stationary
-
-# unpivot the timeseries'
-#ModelDataLong <- ts_long(ModelData)
-#InterestRatesLong <- ts_long(InterestRates)
 
 # plot first difference of interest rate differential
 ts_plot(IRdifferential_d)
@@ -261,6 +263,8 @@ p
 ggsave(paste(outDir, "First_diff_log_exchange_rate.png", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 
 # plot both the interest rates
+InterestRatesLong <- pivot_longer(trimmedData, cols = c(SARON, SOFR), names_to = "id", values_to = "value")
+InterestRatesLong = select(InterestRatesLong, Date, id, value)
 ts_plot(InterestRatesLong)
 p <- ggplot(InterestRatesLong, aes(x = Date, y = value, color = id)) +
   geom_line()
@@ -282,82 +286,50 @@ ggsave(paste(outDir, "ACFExchangeRateDiff.png", sep = "/"), plot = last_plot(), 
 
 plotACF(IRdifferential_d, 365)
 ggsave(paste(outDir, "ACFInterestRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
-# !!! This is highly autocorrelated, is this a problem???
+# Similar to above, there is some autocorrelation.
+# The strongly negative anti-correlation on day 1 is concerning. It suggests
+# markets over-correct on news and then regress the day after...
 
-p <- plotCCF(ts_ts(ModelData), ts_ts(ModelData$LogDifferenceCHFUSD), lag.max = 15)
-# doesn't work yet, do we need a CCF?
+p <- plotCCF(ERd, IRdifferential_d, lag.max = 365)
+p <- ggLayout(p) +
+  labs(title = "Cross Correlation Function of Interest Rate differential and Exchange Rate")
+p
+ggsave(paste(outDir, "CCF.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+# Not more cross-correlation than could be expected by chance
 
 # ------------------------------------------------------------------------------
 # 3) Regression Analyses
 # ------------------------------------------------------------------------------
 
 # Perform simple regression analysis
-result <- lm(LogDifferenceCHFUSD ~ InterestRateDiff, data = ModelData)
+result <- lm(ERd ~ IRdifferential_d)
 summary(result)
-# Can we do a partial regression of just the peaks in the ER diff
+# The p-value over 0.6 strongly implies no predictive power in the interest rates
 
-# Need to check AR of residuals
-# the effect of the period of 
-
-# Regression with some lags
-result2 <- lm(LogDifferenceCHFUSD ~ InterestRateDiff + lag(InterestRateDiff) + lag(InterestRateDiff, 2) + lag(InterestRateDiff, 3) + lag(InterestRateDiff, 4), data = ModelData)
-summary(result2)
-
-# Regression with lagged ER
-result3 <- lm(LogDifferenceCHFUSD ~ lag(LogDifferenceCHFUSD) + InterestRateDiff + lag(InterestRateDiff) + lag(InterestRateDiff, 2) + lag(InterestRateDiff, 3) + lag(InterestRateDiff, 4), data = ModelData)
-summary(result3)
-# expected result, because 1 period lag is autocorrelated
-
-# Durbin-Watson test for autocorrelation
-dw_test <- dwtest(result)
-print(dw_test)
-# there is autocorrelation
-
-# Check if the series is stationary
-adf.test(trimmedData$LogDifferenceCHFUSD, k = 365)
-# does NOT appear to be stationary (high p value means we cannot reject null 
-# hypothesis that it is not stationary)
-# Non-stationary-ness is not really an issue for ARIMA models though
-# use the code from the application, if either value is not stationary we will have another look
-
-
-log_diff_ts <- ts(trimmedData$LogDifferenceCHFUSD, frequency = 365)
-
-season.test(log_diff_ts)
-# test for seasonality, doesn't work yet, don't think it's needed
-
-# Fit ARIMA model
-# auto.arima automatically selects the best p, d, q parameters
-arima_model <- auto.arima(log_diff_ts, stepwise=TRUE, approximation=TRUE)
-# is this kind of model suitable for daily data
-
-arima_model <- auto.arima(log_diff_ts, max.p = 30, max.P = 30, max.q = 30, 
-                          max.Q = 30, stepwise=FALSE, approximation=TRUE, 
-                          num.cores = 6, max.D = 3, max.d = 3)
-
-# Open PDF document to save output
-pdf("output.pdf", width = 11.7, height = 8.3)
-
-# Summary of the model
-summary(arima_model)
-
-# Check model diagnostics
-checkresiduals(arima_model)
-
-# ARIMA forecasts
-forecast <- forecast(arima_model, h = 365)
-plot(forecast)
-
+# Check autocorrelation of residuals 
+pdf("residuals.pdf", width = 11.7, height = 8.3)
+checkresiduals(result)+theme_minimal()
 dev.off()
 
-# I think we need to make both time-series stationary and then we can use a
-# normal regression
+# Fit ARIMA model for benchmark
+arima_model <- auto.arima(log_diff_ts, stepwise=TRUE, approximation=TRUE, ic = c("aic"))
+pdf("arima", width = 11.7, height = 8.3)
+summary(arima_model)
+checkresiduals(arima_model)
+forecast <- forecast(arima_model, h = 365)
+plot(forecast)
+dev.off()
 
-# rolling forecast from App 7
 
-# conclusion in paper of what we learned
+# ------------------------------------------------------------------------------
+# TO-DO
+# ------------------------------------------------------------------------------
 
-# restrict period to only 2 days before and after interest rate changes
+#1 Create a benchmark and compare out model to the benchmark using 
+    # the tools from App7
 
-# a random walk forecast would be a reasonable benchmark
-# use AIC
+#2 Create a rolling forecast that takes in the data available at each date to 
+    # predict the next dates (as in App7)
+
+#3 Use the policy rate changes to restrict the time period to only those dates
+    # within 2 days of a policy change to look for impacts created by policy
