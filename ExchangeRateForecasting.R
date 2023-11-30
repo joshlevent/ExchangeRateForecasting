@@ -154,16 +154,7 @@ SwissPolicyChange2 = subset(SwissPolicyChange2, value != 0)
 SwissPolicyChange = rbind(SwissPolicyChange1, SwissPolicyChange2)
 
 # we're actually only interested in the dates here
-
-# SARON2 <- df %>% filter(D0 == "SARON")
-# 
-# older code for trimming and interpolating
-# date_range <- seq(from = min(PolicyRate$Date), to = max(PolicyRate$Date), by = "day")
-# df_dates <- data.frame(Date = date_range)
-# PolicyRate <- left_join(df_dates, PolicyRate, by = "Date")
-# PolicyRate <- na.trim(PolicyRate)
-# PolicyRate <- mutate(PolicyRate, Value = na.approx(Value))
-
+# the rest of the processing to select the dates is still to be done
 
 # 1.5 USA Policy Actions
 # Get data
@@ -323,3 +314,14 @@ dev.off()
 
 #3 Use the policy rate changes to restrict the time period to only those dates
     # within 2 days of a policy change to look for impacts created by policy
+
+#4 There is a different data source for the SARON with the policy rate, I'm 
+    # curious to check whether it shows exactly the same data
+    # SARON2 <- df %>% filter(D0 == "SARON")
+
+# 5 Determine whether we need to reintroduce the interpolation function
+    # date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
+    # df_dates <- data.frame(Date = date_range)
+    # df <- left_join(df_dates, df, by = "Date")
+    # df <- na.trim(df)
+    # df <- mutate(df, Value = na.approx(Value))
