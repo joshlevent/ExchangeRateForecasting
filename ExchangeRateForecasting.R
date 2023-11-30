@@ -21,15 +21,6 @@ library(ggplot2)
 library(tidyr)
 library(forecast)
 
-# library(tseries)
-# 
-# library(lubridate)
-# library(lmtest)
-
-# library(quantmod)
-
-
-
 # clean objects
 rm(list=ls())
 
@@ -43,7 +34,6 @@ outDir = makeOutDir(mainDir, "ERFOutput")
 # ------------------------------------------------------------------------------
 # 1) Data import, cleaning and preparation
 # ------------------------------------------------------------------------------
-
 
 # define locale for SNB imports
 de_CH = locale(date_format = "%d.%m.%Y")
@@ -312,7 +302,7 @@ checkresiduals(result)+theme_minimal()
 dev.off()
 
 # Fit ARIMA model for benchmark
-arima_model <- auto.arima(log_diff_ts, stepwise=TRUE, approximation=TRUE, ic = c("aic"))
+arima_model <- auto.arima(ERd, stepwise=TRUE, approximation=TRUE, ic = c("aic"))
 pdf("arima", width = 11.7, height = 8.3)
 summary(arima_model)
 checkresiduals(arima_model)
