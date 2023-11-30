@@ -6,7 +6,8 @@
 # ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# Packages that we need
+# 0) Packages and functions that we need
+# ------------------------------------------------------------------------------
 library(httr)
 library(readr)
 library(dplyr)
@@ -27,51 +28,171 @@ rm(list=ls())
 source("UserPackages.R")
 
 # Create an output folder in the current directory
-mainDir <- getwd()
-outDir <- makeOutDir(mainDir, "/ERFOutput")
+mainDir = getwd()
+outDir = makeOutDir(mainDir, "ERFOutput")
 
-# Function to fetch and preprocess data
-fetch_data <- function(url, skip_rows, delimiter, date_format) {
-  response <- GET(url)
-  data <- content(response, "text")
-  df <- read_delim(data, delim = delimiter, skip = skip_rows, na = c("", "ND", "."), col_names = c("Date", "Value"))
-  # the following part fills in missing dates and interpolates the data
-  if (nrow(df) > 0) {
-    df$Date <- as.Date(df$Date, format = date_format)
-    date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
-    df <- data.frame(Date = date_range) %>% 
-      left_join(df, by = "Date") %>%
-      mutate(Value = na.approx(as.numeric(Value)))
-  }
-  
-  return(df)
-}
+# ------------------------------------------------------------------------------
+# 1) Data import, cleaning and preparation
+# ------------------------------------------------------------------------------
 
-# Data URLs
-SARONurl <- "https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv"
-SOFRurl <- "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1319&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=SOFR&scale=left&cosd=2018-04-03&coed=2024-11-09&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2024-11-12&revision_date=2024-11-12&nd=2018-04-03"
-ERurl <- "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H10&series=f838388dca2fd4e8bdfb846f3d2c35df&lastobs=&from=01/01/1971&to=10/09/2024&filetype=csv&label=include&layout=seriescolumn"
 
-# Fetch data for each series
-SARONData <- fetch_data(SARONurl, 4, ";", "%d.%m.%Y")
-SOFRData <- fetch_data(SOFRurl, 1, ",", "%Y-%m-%d")
-ERData <- fetch_data(ERurl, 6, ",", "%Y-%m-%d")
+# define locale for SNB imports
+de_CH = locale(date_format = "%d.%m.%Y")
+
+# 1.1 SARON
+# Get data
+url = "https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv"
+response = GET(url)
+data = content(response, "text")
+
+# Save a cache of the data
+timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
+filename = paste0("../cache/SARON-", timestamp, ".csv")
+write(data, file = filename)
+
+# parse the file contents and save to objects
+df = read_delim(data, delim = "; ", skip = 4,
+                 col_types = "Dd", col_names = c("Date", "Value"), 
+                 locale = de_CH, col_select = c(1,2))
+SARON = xts(df$Value, order.by = df$Date) 
+SARONData = select(df, Date, Value)
+
+# 1.2 SOFR
+# Get data
+url = "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1319&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=SOFR&scale=left&cosd=2018-04-03&coed=2024-11-09&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2024-11-12&revision_date=2024-11-12&nd=2018-04-03"
+response = GET(url)
+data = content(response, "text")
+
+# Save a cache of the data
+timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
+filename = paste0("../cache/SOFR-", timestamp, ".csv")
+write(data, file = filename)
+
+# parse the file contents and save to objects
+df = read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"), 
+              col_select = c(1,2))
+SOFR = xts(df$Value, order.by = df$Date) 
+SOFRData = select(df, Date, Value)
+
+# 1.3 Exchange Rate USD CHF
+# Get data
+url = "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H10&series=f838388dca2fd4e8bdfb846f3d2c35df&lastobs=&from=01/01/1971&to=10/09/2024&filetype=csv&label=include&layout=seriescolumn"
+response = GET(url)
+data = content(response, "text")
+
+# Save a cache of the data
+timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
+filename = paste0("../cache/ER-", timestamp, ".csv")
+write(data, file = filename)
+
+# parse the file contents and save to objects
+df = read_csv(data, skip = 6, col_types = "Dd", col_names = c("Date", "Value"), 
+              col_select = c(1,2))
+ER = xts(df$Value, order.by = df$Date) 
+ERData = select(df, Date, Value)
 
 # Additional processing for ERData
 ERData <- ERData %>%
   mutate(USDCHF = 1 / Value,
          LogCHFUSD = log(USDCHF),
-         LaggedLogCHFUSD = lag(LogCHFUSD),
-         LogDifferenceCHFUSD = (LogCHFUSD - LaggedLogCHFUSD) * 100)
+         ForwardLogCHFUSD = lead(LogCHFUSD),
+         LogDifferenceCHFUSD = (LogCHFUSD - ForwardLogCHFUSD) * 100)
 
-# Select relevant columns
+# 1.4 Swiss Policy Actions
+# Get new data
+url <- "https://data.snb.ch/json/table/getFile?fileId=2eb5650771935a870db45db19f098567acfe49cf8e9872727243fc1885238707&pageViewTime=20231127_172937&lang=en"
+response <- GET(url)
+data <- content(response, "text")
+
+# Save a cache of the data
+timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
+filename = paste0("../cache/SwissPolicy1-", timestamp, ".csv")
+write(data, file = filename)
+
+# parse the file contents
+df <- read_delim(data, delim = ";", col_types = "Dcd", skip = 4, 
+                 na = c("", "ND", "."), col_names = c("Date", "D0", "Value"))
+
+# additional transformations to select only policy rate
+df <- filter(df, D0 == "LZ")
+df <- select(df, Date, Value)
+df <- na.trim(df)
+
+# save to xts object
+SwissPolicyRate = xts(df$Value, order.by = df$Date) 
+
+# transformations to select policy changes
+SwissPolicyChange1 = ts_diff(SwissPolicyRate)
+SwissPolicyChange1 = subset(SwissPolicyChange1, value != 0)
+
+# Get old data
+url <- "https://data.snb.ch/json/table/getFile?fileId=598a401ddfd66075bc2be3845d5f21e3ddf5e22d083ea30424af2e633e374778&pageViewTime=20231127_173150&lang=en"
+response <- GET(url)
+data <- content(response, "text")
+
+# Save a cache of the data
+timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
+filename = paste0("../cache/SwissPolicy2-", timestamp, ".csv")
+write(data, file = filename)
+
+# parse the file contents
+df <- read_delim(data, delim = ";", col_types = "Dcd", skip = 4, 
+                 na = c("", "ND", "."), col_names = c("Date", "D0", "Value"))
+
+# additional transformations to select only policy rate
+df <- df %>% filter(D0 == "UG")
+df <- select(df, Date, Value)
+df <- na.trim(df)
+
+# save to xts object
+SwissPolicyRate = xts(df$Value, order.by = df$Date) 
+
+# transformations to select policy changes
+SwissPolicyChange2 = ts_diff(SwissPolicyRate)
+SwissPolicyChange2 = subset(SwissPolicyChange2, value != 0)
+
+# combine old and new data
+SwissPolicyChange = rbind(SwissPolicyChange1, SwissPolicyChange2)
+
+# we're actually only interested in the dates here
+
+# SARON2 <- df %>% filter(D0 == "SARON")
+# 
+# older code for trimming and interpolating
+# date_range <- seq(from = min(PolicyRate$Date), to = max(PolicyRate$Date), by = "day")
+# df_dates <- data.frame(Date = date_range)
+# PolicyRate <- left_join(df_dates, PolicyRate, by = "Date")
+# PolicyRate <- na.trim(PolicyRate)
+# PolicyRate <- mutate(PolicyRate, Value = na.approx(Value))
+
+
+# 1.5 USA Policy Actions
+# Get data
+url = "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1318&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=DFEDTARU&scale=left&cosd=2018-01-01&coed=2023-11-27&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily%2C%207-Day&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2023-11-27&revision_date=2023-11-27&nd=2008-12-16"
+response = GET(url)
+data = content(response, "text")
+
+# Save a cache of the data
+timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
+filename = paste0("../cache/USPolicy-", timestamp, ".csv")
+write(data, file = filename)
+
+# parse the file contents and save to objects
+df = read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"))
+USPolicyRate = xts(df$Value, order.by = df$Date) 
+
+# transformations to select policy changes
+USPolicyChange = ts_diff(USPolicyRate)
+USPolicyChange = subset(USPolicyChange, value != 0)
+
+# 1.6 Combining and trimming exchange rate and interest rate timeseries
+# Select and rename relevant columns
 SARONData <- SARONData %>% select(Date, SARON = Value)
 SOFRData <- SOFRData %>% select(Date, SOFR = Value)
 ERData <- ERData %>% select(Date, LogDifferenceCHFUSD)
 
-# Combine datasets
+# Combine dataframes
 combinedData <- reduce(list(SARONData, SOFRData, ERData), full_join, by = "Date")
-
 
 # Identify valid date range
 first_valid_date <- combinedData %>% filter(!is.na(SARON) & !is.na(SOFR) & !is.na(LogDifferenceCHFUSD)) %>% summarize(first_date = min(Date)) %>% pull(first_date)
@@ -80,14 +201,10 @@ last_valid_date <- combinedData %>% filter(!is.na(SARON) & !is.na(SOFR) & !is.na
 # Trim data to valid range
 trimmedData <- combinedData %>% filter(Date >= first_valid_date & Date <= last_valid_date)
 
-# Check for missing dates
-date_range <- seq(from = min(trimmedData$Date), to = max(trimmedData$Date), by = "day")
-missing_dates <- setdiff(date_range, trimmedData$Date)
-if (length(missing_dates) == 0) {
-  print("No missing dates in the series.")
-} else {
-  print(paste("Missing dates:", missing_dates))
-}
+
+# ------------------------------------------------------------------------------
+# 2) Initial checks and tests
+# ------------------------------------------------------------------------------
 
 # checking whether the log difference approximation is suitable
 max(trimmedData$LogDifferenceCHFUSD, na.rm = TRUE)
@@ -98,57 +215,52 @@ min(trimmedData$LogDifferenceCHFUSD, na.rm = TRUE)
 trimmedData <- trimmedData %>%
   mutate(InterestRateDiff = SARON - SOFR)
 
-# split data in two
-ModelData <- trimmedData %>% select(Date, LogDifferenceCHFUSD, InterestRateDiff)
-InterestRates <- trimmedData %>% select(Date, SARON, SOFR)
+# split data into timeseries objects
+IRdifferential = xts(trimmedData$InterestRateDiff, order.by = trimmedData$Date)
+ERd = xts(trimmedData$LogDifferenceCHFUSD, order.by = trimmedData$Date)
 
-# unpivot the timeseries'
-ModelDataLong <- ts_long(ModelData)
-InterestRatesLong <- ts_long(InterestRates)
-
-ts_plot(ModelDataLong)
-p <- ggplot(ModelDataLong, aes(x = Date, y = value, color = id)) +
-  geom_line()
-p <- ggLayout(p) +
-  labs(title = "Exchange rates and interest rate differences for Switzerland and the United States Over Time") +
-  scale_color_manual(values = c("LogDifferenceCHFUSD" = "firebrick4", "InterestRateDiff" = "blue4"),
-                     labels = c("LogDifferenceCHFUSD" = "1-day difference in log exchange rate", "InterestRateDiff" = "Interest Rate Difference")) +
-  scale_y_continuous(breaks = seq(-6, 4, by = 0.5)) +
-  theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
-p
-ggsave(paste(outDir, "ModelData.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
-
-# zoom table
-ModelDataLong_filtered <- ModelDataLong %>%
-  filter(Date >= as.Date("2020-03-01") & Date <= as.Date("2020-03-31"))
-p <- ggplot(ModelDataLong_filtered, aes(x = Date, y = value, color = id)) +
-  geom_line()
-p <- ggLayout(p) +
-  labs(title = "Exchange rates and interest rate differences for Switzerland and the United States Over Time") +
-  scale_color_manual(values = c("LogDifferenceCHFUSD" = "firebrick4", "InterestRateDiff" = "blue4"),
-                     labels = c("LogDifferenceCHFUSD" = "1-day difference in log exchange rate", "InterestRateDiff" = "Interest Rate Difference")) +
-  scale_y_continuous(breaks = seq(-6, 4, by = 0.5)) +
-  theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
-p
-
-ModelDataLong_filtered <- ModelDataLong %>%
-  filter(Date >= as.Date("2021-06-01") & Date <= as.Date("2021-07-31"))
-p <- ggplot(ModelDataLong_filtered, aes(x = Date, y = value, color = id)) +
-  geom_line()
-p <- ggLayout(p) +
-  labs(title = "Exchange rates and interest rate differences for Switzerland and the United States Over Time") +
-  scale_color_manual(values = c("LogDifferenceCHFUSD" = "firebrick4", "InterestRateDiff" = "blue4"),
-                     labels = c("LogDifferenceCHFUSD" = "1-day difference in log exchange rate", "InterestRateDiff" = "Interest Rate Difference")) +
-  scale_y_continuous(breaks = seq(-6, 4, by = 0.5)) +
-  theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
-p
+#ModelData <- trimmedData %>% select(Date, LogDifferenceCHFUSD, InterestRateDiff)
+#InterestRates <- trimmedData %>% select(Date, SARON, SOFR)
 
 # check for stationarity with u Root test
-uRootCPI = CADFtest(ModelData$LogDifferenceCHFUSD, max.lag.y = 10, type = "trend", criterion = "BIC")
-summary(uRootCPI)
-uRootCPId = CADFtest(ModelData$InterestRateDiff, max.lag.y = 10, type = "drift", criterion = "BIC")
-summary(uRootCPId)
+uRootER = CADFtest(ERd, max.lag.y = 10, type = "drift", criterion = "BIC")
+summary(uRootER)
+# this is stationary, good!
+uRootIRd = CADFtest(IRdifferential, max.lag.y = 10, type = "drift", criterion = "BIC")
+summary(uRootIRd)
+# this is not stationary, bad!
+# create a first difference variable
+IRdifferential_d = IRdifferential - lag(IRdifferential)
+# check the first difference for 
+uRootFDIR = CADFtest(IRdifferential_d, max.lag.y = 10, type = "drift", criterion = "BIC")
+summary(uRootFDIR)
+# great, this is now stationary
 
+# unpivot the timeseries'
+#ModelDataLong <- ts_long(ModelData)
+#InterestRatesLong <- ts_long(InterestRates)
+
+# plot first difference of interest rate differential
+ts_plot(IRdifferential_d)
+p <- autoplot(IRdifferential_d)
+p <- ggLayout(p) +
+  labs(title = "First differences of Interest Rate differential between Switzerland and USA") +
+  scale_y_continuous(breaks = seq(-3, 3, by = 0.5)) +
+  theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
+p
+ggsave(paste(outDir, "First_diff_interest_rate_differential.png", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+
+# plot first difference of log exchange rates
+ts_plot(ERd)
+p <- autoplot(ERd)
+p <- ggLayout(p) +
+  labs(title = "First differences of log exchange rate between Switzerland and USA") +
+  scale_y_continuous(breaks = seq(-3, 3, by = 0.5)) +
+  theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
+p
+ggsave(paste(outDir, "First_diff_log_exchange_rate.png", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+
+# plot both the interest rates
 ts_plot(InterestRatesLong)
 p <- ggplot(InterestRatesLong, aes(x = Date, y = value, color = id)) +
   geom_line()
@@ -161,16 +273,23 @@ p <- ggLayout(p) +
 p
 ggsave(paste(outDir, "InterestRates.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 
-plotACF(ModelData$LogDifferenceCHFUSD, 365)
-ggsave(paste(outDir, "ACFExchangeRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+p <- plotACF(ERd, 365)
+p <- ggLayout(p) +
+  labs(title = "Autocorrelation Function of first differences of log exchange rate")
+p
+ggsave(paste(outDir, "ACFExchangeRateDiff.png", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 # there is some AC, but we expect some in 300 cases
 
-plotACF(ModelData$InterestRateDiff, 365)
+plotACF(IRdifferential_d, 365)
 ggsave(paste(outDir, "ACFInterestRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 # !!! This is highly autocorrelated, is this a problem???
 
 p <- plotCCF(ts_ts(ModelData), ts_ts(ModelData$LogDifferenceCHFUSD), lag.max = 15)
 # doesn't work yet, do we need a CCF?
+
+# ------------------------------------------------------------------------------
+# 3) Regression Analyses
+# ------------------------------------------------------------------------------
 
 # Perform simple regression analysis
 result <- lm(LogDifferenceCHFUSD ~ InterestRateDiff, data = ModelData)
