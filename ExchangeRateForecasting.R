@@ -319,6 +319,16 @@ pdf("residuals.pdf", width = 11.7, height = 8.3)
 checkresiduals(result)+theme_minimal()
 dev.off()
 
+# calculate error measures for empirical model
+ME2 = mean(result$residuals)
+T=length(result$residuals)
+FEV2 = var(result$residuals)*(T-1)/T
+MSFE2 = mean(result$residuals^2)
+RMSFE2 = sqrt(MSFE2)
+MAFE2 = mean(abs(result$residuals))
+
+
+
 # Create forecast with theoretical model
 trimmedData$TheoryForecast = dplyr::lag(trimmedData$InterestRateDiff/365 + trimmedData$LogCHFUSD)
 trimmedData$TheoryCHFUSD = exp(trimmedData$TheoryForecast/100)
@@ -338,15 +348,6 @@ MSFE1 = mean(TheoryError^2)
 RMSFE1 = sqrt(MSFE1)
 MAFE1 = mean(abs(TheoryError))
 
-# calculate error measures for empirical model
-ME2 = mean(result$residuals)
-T=length(result$residuals)
-FEV2 = var(result$residuals)*(T-1)/T
-MSFE2 = mean(result$residuals^2)
-RMSFE2 = sqrt(MSFE2)
-MAFE2 = mean(abs(result$residuals))
-
-
 
 # Fit ARIMA model for benchmark
 arima_model <- auto.arima(ERd, stepwise=TRUE, approximation=TRUE, ic = c("aic"))
@@ -364,6 +365,7 @@ MSFE3 = mean(arima_model$residuals^2)
 RMSFE3 = sqrt(MSFE3)
 MAFE3 = mean(abs(arima_model$residuals))
 
+# draw table of various error measures for all 3 models
 Table = c(ME1^2/MSFE1, ME2^2/MSFE2, ME3^2/MSFE3)
 Table = rbind(Table, c(FEV1/MSFE1, FEV2/MSFE2, FEV3/MSFE3))
 Table = rbind(Table, c(RMSFE1, RMSFE2, RMSFE3))
