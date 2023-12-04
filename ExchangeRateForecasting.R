@@ -320,14 +320,33 @@ checkresiduals(result)+theme_minimal()
 dev.off()
 
 # Create forecast with theoretical model
-trimmedData$TheoryForecast = trimmedData$InterestRateDiff/365 + trimmedData$LogCHFUSD
-trimmedData$TheoryError = trimmedData$LogCHFUSD - trimmedData$TheoryForecast
+trimmedData$TheoryForecast = dplyr::lag(trimmedData$InterestRateDiff/365 + trimmedData$LogCHFUSD)
 trimmedData$TheoryCHFUSD = exp(trimmedData$TheoryForecast/100)
 CHFUSD = xts(trimmedData$CHFUSD, order.by = trimmedData$Date)
-TheoryCHFUSD = stats::lag(xts(trimmedData$TheoryCHFUSD, order.by = trimmedData$Date))
+TheoryCHFUSD = xts(trimmedData$TheoryCHFUSD, order.by = trimmedData$Date)
 ts_plot(CHFUSD, TheoryCHFUSD)
+
+# calculate error measures for theoretical model
+trimmedData$TheoryError = trimmedData$LogCHFUSD - trimmedData$TheoryForecast
 TheoryError = xts(trimmedData$TheoryError, order.by = trimmedData$Date)
+TheoryError <- na.trim(TheoryError)
 ts_plot(TheoryError)
+ME1 = mean(TheoryError)
+T=length(TheoryError)
+FEV1 = var(TheoryError)*(T-1)/T
+MSFE1 = mean(TheoryError^2)
+RMSFE1 = sqrt(MSFE1)
+MAFE1 = mean(abs(TheoryError))
+
+# calculate error measures for empirical model
+ME2 = mean(result$residuals)
+T=length(result$residuals)
+FEV2 = var(result$residuals)*(T-1)/T
+MSFE2 = mean(result$residuals^2)
+RMSFE2 = sqrt(MSFE2)
+MAFE2 = mean(abs(result$residuals))
+
+
 
 # Fit ARIMA model for benchmark
 arima_model <- auto.arima(ERd, stepwise=TRUE, approximation=TRUE, ic = c("aic"))
@@ -337,6 +356,22 @@ checkresiduals(arima_model)
 forecast <- forecast(arima_model, h = 365)
 plot(forecast)
 dev.off()
+
+ME3 = mean(arima_model$residuals)
+T=length(arima_model$residuals)
+FEV3 = var(arima_model$residuals)*(T-1)/T
+MSFE3 = mean(arima_model$residuals^2)
+RMSFE3 = sqrt(MSFE3)
+MAFE3 = mean(abs(arima_model$residuals))
+
+Table = c(ME1^2/MSFE1, ME2^2/MSFE2, ME3^2/MSFE3)
+Table = rbind(Table, c(FEV1/MSFE1, FEV2/MSFE2, FEV3/MSFE3))
+Table = rbind(Table, c(RMSFE1, RMSFE2, RMSFE3))
+Table = rbind(Table, c(MAFE1, MAFE2, MAFE3))
+Table = round(Table, 2)
+colnames(Table) = c("Theoretical", "Empirical", "AR(1)")
+rownames(Table) = c("Share bias", "Share variance", "RMSFE", "MAFE")
+Table
 
 # ------------------------------------------------------------------------------
 # 4) Rolling Forecast
