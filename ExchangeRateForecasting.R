@@ -321,11 +321,13 @@ dev.off()
 
 # Create forecast with theoretical model
 trimmedData$TheoryForecast = trimmedData$InterestRateDiff/365 + trimmedData$LogCHFUSD
+trimmedData$TheoryError = trimmedData$LogCHFUSD - trimmedData$TheoryForecast
 trimmedData$TheoryCHFUSD = exp(trimmedData$TheoryForecast/100)
 CHFUSD = xts(trimmedData$CHFUSD, order.by = trimmedData$Date)
-TheoryCHFUSD = xts(trimmedData$TheoryCHFUSD, order.by = trimmedData$Date) 
-
+TheoryCHFUSD = stats::lag(xts(trimmedData$TheoryCHFUSD, order.by = trimmedData$Date))
 ts_plot(CHFUSD, TheoryCHFUSD)
+TheoryError = xts(trimmedData$TheoryError, order.by = trimmedData$Date)
+ts_plot(TheoryError)
 
 # Fit ARIMA model for benchmark
 arima_model <- auto.arima(ERd, stepwise=TRUE, approximation=TRUE, ic = c("aic"))
