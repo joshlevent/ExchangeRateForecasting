@@ -310,6 +310,7 @@ ggsave(paste(outDir, "CCF.pdf", sep = "/"), plot = last_plot(), width = 21, heig
 # ------------------------------------------------------------------------------
 
 # Perform simple regression analysis
+# THIS IS AN IN-SAMPLE TEST (BEST CASE)
 result <- lm(ERd ~ IRdifferential_d)
 summary(result)
 # The p-value over 0.6 strongly implies no predictive power in the interest rates
@@ -320,12 +321,13 @@ checkresiduals(result)+theme_minimal()
 dev.off()
 
 # calculate error measures for empirical model
-ME2 = mean(result$residuals)
-T=length(result$residuals)
-FEV2 = var(result$residuals)*(T-1)/T
-MSFE2 = mean(result$residuals^2)
+EmpiricalError = ts(result$residuals)
+ME2 = mean(EmpiricalError)
+T=length(EmpiricalError)
+FEV2 = var(EmpiricalError)*(T-1)/T
+MSFE2 = mean(EmpiricalError^2)
 RMSFE2 = sqrt(MSFE2)
-MAFE2 = mean(abs(result$residuals))
+MAFE2 = mean(abs(EmpiricalError))
 
 
 
@@ -358,22 +360,61 @@ forecast <- forecast(arima_model, h = 365)
 plot(forecast)
 dev.off()
 
-ME3 = mean(arima_model$residuals)
-T=length(arima_model$residuals)
-FEV3 = var(arima_model$residuals)*(T-1)/T
-MSFE3 = mean(arima_model$residuals^2)
+ARIMAError = arima_model$residuals
+ARIMAError = ts_span(ARIMAError, end = "2066")
+ME3 = mean(ARIMAError)
+T=length(ARIMAError)
+FEV3 = var(ARIMAError)*(T-1)/T
+MSFE3 = mean(ARIMAError^2)
 RMSFE3 = sqrt(MSFE3)
-MAFE3 = mean(abs(arima_model$residuals))
+MAFE3 = mean(abs(ARIMAError))
+
+# add random walk forecast, previous value
+trimmedData$RWForecast = dplyr::lag(trimmedData$LogCHFUSD)
+trimmedData$RWError = trimmedData$LogCHFUSD - trimmedData$RWForecast
+RWError = xts(trimmedData$RWError, order.by = trimmedData$Date)
+RWError = na.trim(RWError)
+ME4 = mean(RWError)
+T=length(RWError)
+FEV4 = var(RWError)*(T-1)/T
+MSFE4 = mean(RWError^2)
+RMSFE4 = sqrt(MSFE4)
+MAFE4 = mean(abs(RWError))
 
 # draw table of various error measures for all 3 models
-Table = c(ME1^2/MSFE1, ME2^2/MSFE2, ME3^2/MSFE3)
-Table = rbind(Table, c(FEV1/MSFE1, FEV2/MSFE2, FEV3/MSFE3))
-Table = rbind(Table, c(RMSFE1, RMSFE2, RMSFE3))
-Table = rbind(Table, c(MAFE1, MAFE2, MAFE3))
+Table = c(ME1^2/MSFE1, ME2^2/MSFE2, ME3^2/MSFE3, ME4^2/MSFE4)
+Table = rbind(Table, c(FEV1/MSFE1, FEV2/MSFE2, FEV3/MSFE3, FEV4/MSFE4))
+Table = rbind(Table, c(RMSFE1, RMSFE2, RMSFE3, RMSFE4))
+Table = rbind(Table, c(MAFE1, MAFE2, MAFE3, MAFE4))
 Table = round(Table, 2)
-colnames(Table) = c("Theoretical", "Empirical", "AR(1)")
+colnames(Table) = c("Theoretical", "Empirical", "AR(1)", "Random Walk")
 rownames(Table) = c("Share bias", "Share variance", "RMSFE", "MAFE")
 Table
+
+# Diebold Mariano test
+DMTest1 = dm.test(EmpiricalError, ARIMAError, h = 1, power = 2)
+DMTest1
+# a p value of 0.89 suggests that the two forecasts are not significantly 
+# different from one another
+DMTest2 = dm.test(TheoryError, ARIMAError, h = 1, power = 2)
+DMTest2
+
+DMTest3 = dm.test(RWError, ARIMAError, h = 1, power = 2)
+DMTest3
+
+DMTest4 = dm.test(RWError, TheoryError, h = 1, power = 2)
+DMTest4
+
+DMTest5 = dm.test(RWError, EmpiricalError, h = 1, power = 2)
+DMTest5
+
+DMTest6 = dm.test(TheoryError, EmpiricalError, h = 1, power = 2)
+DMTest6
+# The only significantly different models are the AR(1) and Theoretical Model
+# and the Random Walk and AR(1) models. In both cases the AR(1) model is better
+# The absolute values of the errors are very similar, therefore, likely this is
+# a small difference in the error that is showing statistical significance
+# because of the large sample
 
 # ------------------------------------------------------------------------------
 # 4) Rolling Forecast
