@@ -53,6 +53,14 @@ write(data, file = filename)
 df = read_delim(data, delim = "; ", skip = 4,
                  col_types = "Dd", col_names = c("Date", "Value"), 
                  locale = de_CH, col_select = c(1,2))
+
+# fill missing dates, and then interpolate missing values
+date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
+df <- data.frame(Date = date_range) %>% 
+  left_join(df, by = "Date") %>%
+  mutate(Value = na.approx(as.numeric(Value)))
+
+# save data into objects
 SARON = xts(df$Value, order.by = df$Date) 
 SARONData = select(df, Date, Value)
 
@@ -70,6 +78,14 @@ write(data, file = filename)
 # parse the file contents and save to objects
 df = read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"), 
               na = c("", "ND", "."))
+
+# fill missing dates, and then interpolate missing values
+date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
+df <- data.frame(Date = date_range) %>% 
+  left_join(df, by = "Date") %>%
+  mutate(Value = na.approx(as.numeric(Value)))
+
+# save data into objects
 SOFR = xts(df$Value, order.by = df$Date) 
 SOFRData = select(df, Date, Value)
 
@@ -84,18 +100,29 @@ timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
 filename = paste0("../cache/ER-", timestamp, ".csv")
 write(data, file = filename)
 
-# parse the file contents and save to objects
+# parse the file contents
 df = read_csv(data, skip = 6, col_types = "Dd", col_names = c("Date", "Value"), 
               na = c("", "ND", "."))
+
+# trim leading and ending NAs
+df <- na.trim(df)
+
+# fill missing dates, and then interpolate missing values
+date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
+df <- data.frame(Date = date_range) %>% 
+  left_join(df, by = "Date") %>%
+  mutate(Value = na.approx(as.numeric(Value)))
+
+# save data into objects
 ER = xts(df$Value, order.by = df$Date) 
 ERData = select(df, Date, Value)
 
 # Additional processing for ERData
 ERData <- ERData %>%
-  mutate(USDCHF = 1 / Value,
-         LogCHFUSD = log(USDCHF),
+  mutate(CHFUSD = 1 / Value,
+         LogCHFUSD = log(CHFUSD) * 100,
          ForwardLogCHFUSD = lead(LogCHFUSD),
-         LogDifferenceCHFUSD = (ForwardLogCHFUSD - LogCHFUSD) * 100)
+         LogDifferenceCHFUSD = ForwardLogCHFUSD - LogCHFUSD)
 
 # 1.4 Swiss Policy Actions
 # Get new data
@@ -179,7 +206,7 @@ USPolicyChange = subset(USPolicyChange, value != 0)
 # Select and rename relevant columns
 SARONData <- SARONData %>% select(Date, SARON = Value)
 SOFRData <- SOFRData %>% select(Date, SOFR = Value)
-ERData <- ERData %>% select(Date, LogDifferenceCHFUSD)
+ERData <- ERData %>% select(Date, LogDifferenceCHFUSD, LogCHFUSD, CHFUSD)
 
 # Combine dataframes
 combinedData <- reduce(list(SARONData, SOFRData, ERData), full_join, by = "Date")
@@ -292,6 +319,14 @@ pdf("residuals.pdf", width = 11.7, height = 8.3)
 checkresiduals(result)+theme_minimal()
 dev.off()
 
+# Create forecast with theoretical model
+trimmedData$TheoryForecast = trimmedData$InterestRateDiff/365 + trimmedData$LogCHFUSD
+trimmedData$TheoryCHFUSD = exp(trimmedData$TheoryForecast/100)
+CHFUSD = xts(trimmedData$CHFUSD, order.by = trimmedData$Date)
+TheoryCHFUSD = xts(trimmedData$TheoryCHFUSD, order.by = trimmedData$Date) 
+
+ts_plot(CHFUSD, TheoryCHFUSD)
+
 # Fit ARIMA model for benchmark
 arima_model <- auto.arima(ERd, stepwise=TRUE, approximation=TRUE, ic = c("aic"))
 pdf("arima", width = 11.7, height = 8.3)
@@ -301,12 +336,48 @@ forecast <- forecast(arima_model, h = 365)
 plot(forecast)
 dev.off()
 
+# ------------------------------------------------------------------------------
+# 4) Rolling Forecast
+# ------------------------------------------------------------------------------
+
+# First we create a rolling AR(1) Forecast as a baseline
+ER <- ts_span(ER, start = "2018-01-01")
+horizon <- 30
+ARFcst1 <- ER
+
+ARFcst1[] <- NA
+ARFcst14 <- ARFcst1
+ARFcst30 <- ARFcst1
+
+# Note that we can use maximum likelihood (ML) or conditional sum of squares 
+# (CSS). MLE is slower but usually yields more stable results
+myMethod = "CSS"
+for(smpEnd in seq(as.Date(first_valid_date+700), as.Date(last_valid_date), by = "day")){  
+  x = ts_ts(ts_span(ER, start = "2018-01-01", end = as.Date(smpEnd)))
+  refit = Arima(x, order = c(1, 0, 0), include.constant= TRUE, method = myMethod)
+  fcst = forecast(refit, h = horizon)
+
+  
+  ARFcst1[as.Date(index(ts_xts(fcst$mean))[1])] = fcst$mean[1]
+  ARFcst14[as.Date(index(ts_xts(fcst$mean))[14])] = fcst$mean[14]
+  ARFcst30[as.Date(index(ts_xts(fcst$mean))[30])] = fcst$mean[30]
+
+}
+
+ts_plot(
+  `Exchange rate` = ER,
+  `H = 1` = ARFcst1, 
+  `H = 14` = ARFcst14,
+  `H = 30` = ARFcst30, 
+  title = "Exchange rate and AR(1) Forecasts",
+  subtitle = ""
+)
 
 # ------------------------------------------------------------------------------
 # TO-DO
 # ------------------------------------------------------------------------------
 
-#1 Create a benchmark and compare out model to the benchmark using 
+#1 Create a benchmark and compare our model to the benchmark using 
     # the tools from App7
 
 #2 Create a rolling forecast that takes in the data available at each date to 
@@ -319,9 +390,10 @@ dev.off()
     # curious to check whether it shows exactly the same data
     # SARON2 <- df %>% filter(D0 == "SARON")
 
-# 5 Determine whether we need to reintroduce the interpolation function
-    # date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
-    # df_dates <- data.frame(Date = date_range)
-    # df <- left_join(df_dates, df, by = "Date")
-    # df <- na.trim(df)
-    # df <- mutate(df, Value = na.approx(Value))
+#5 What if we create a "naive" UIP forecast, that is not based on a regression
+    # but just on the economic concept directly?
+
+# 3 models: theoretical, estimated, AR(1)
+# 2 samples: full, policy dates
+# for both we compare errors
+# only for full sample we do rolling forecast
