@@ -4,7 +4,26 @@
 #   Applied Macroeconometrics, University of Neuchatel
 #   Josh Levent, Julien Beaud, 2023
 # ------------------------------------------------------------------------------
-
+#
+#   Disclaimer: 
+#         Some of the following code was generated, inspired and debugged
+#         by ChatGPT. Below are ChatGPT transcripts of all interactions
+#         related to this in reverse chronological order.
+#
+#         https://chat.openai.com/share/794b0c9a-8e88-4eae-a863-7c77249abcc5
+#         https://chat.openai.com/share/0d448d22-253f-46ae-8e69-77339fc7e4d1
+#         https://chat.openai.com/share/89488cba-2a6c-49ba-8745-1d6399eb5a70
+#         https://chat.openai.com/share/de512a26-ffab-4b43-9274-9422588c9cf1
+#         https://chat.openai.com/share/b7da986f-807f-4630-8acb-2e399d7ae7d3
+#         https://chat.openai.com/share/92baa853-f1a0-4e41-a4f7-4aee28c760b7
+#         https://chat.openai.com/share/2895d604-02e5-4c4a-9f1f-115d8f6f1689
+#         https://chat.openai.com/share/0506e655-2623-417f-b7fa-d56a0dd3d131
+#         https://chat.openai.com/share/8b48f6b9-5e7e-4afe-8ad0-4d798a261063
+#         https://chat.openai.com/share/8f5fff34-7da3-469e-a2bf-c6898bdd8153
+#           
+#         Aside from this, code was copied from Applications written by the
+#         Professor, or written by hand.
+#
 # ------------------------------------------------------------------------------
 # 0) Packages and functions that we need
 # ------------------------------------------------------------------------------
@@ -20,6 +39,9 @@ library(CADFtest)
 library(ggplot2)
 library(tidyr)
 library(forecast)
+library(lubridate)
+library(knitr)
+library(kableExtra)
 
 # clean objects
 rm(list=ls())
@@ -28,29 +50,29 @@ rm(list=ls())
 source("UserPackages.R")
 
 # Create an output folder in the current directory
-mainDir = getwd()
-outDir = makeOutDir(mainDir, "ERFOutput")
+mainDir <- getwd()
+outDir <- makeOutDir(mainDir, "ERFOutput")
 
 # ------------------------------------------------------------------------------
 # 1) Data import, cleaning and preparation
 # ------------------------------------------------------------------------------
 
 # define locale for SNB imports
-de_CH = locale(date_format = "%d.%m.%Y")
+de_CH <- locale(date_format = "%d.%m.%Y")
 
 # 1.1 SARON
 # Get data
-url = "https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv"
-response = GET(url)
-data = content(response, "text")
+url <- "https://www.six-group.com/exchanges/downloads/indexdata/hsrron.csv"
+response <- GET(url)
+data <- content(response, "text")
 
 # Save a cache of the data
-timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
-filename = paste0("../cache/SARON-", timestamp, ".csv")
+timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
+filename <- paste0("../cache/SARON-", timestamp, ".csv")
 write(data, file = filename)
 
 # parse the file contents and save to objects
-df = read_delim(data, delim = "; ", skip = 4,
+df <- read_delim(data, delim = "; ", skip = 4,
                  col_types = "Dd", col_names = c("Date", "Value"), 
                  locale = de_CH, col_select = c(1,2))
 
@@ -61,22 +83,22 @@ df <- data.frame(Date = date_range) %>%
   mutate(Value = na.approx(as.numeric(Value)))
 
 # save data into objects
-SARON = xts(df$Value, order.by = df$Date) 
-SARONData = select(df, Date, Value)
+SARON <- xts(df$Value, order.by = df$Date) 
+SARONData <- select(df, Date, Value)
 
 # 1.2 SOFR
 # Get data
-url = "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1319&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=SOFR&scale=left&cosd=2018-04-03&coed=2024-11-09&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2024-11-12&revision_date=2024-11-12&nd=2018-04-03"
-response = GET(url)
-data = content(response, "text")
+url <- "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1319&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=SOFR&scale=left&cosd=2018-04-03&coed=2024-11-09&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2024-11-12&revision_date=2024-11-12&nd=2018-04-03"
+response <- GET(url)
+data <- content(response, "text")
 
 # Save a cache of the data
-timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
-filename = paste0("../cache/SOFR-", timestamp, ".csv")
+timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
+filename <- paste0("../cache/SOFR-", timestamp, ".csv")
 write(data, file = filename)
 
 # parse the file contents and save to objects
-df = read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"), 
+df <- read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"), 
               na = c("", "ND", "."))
 
 # fill missing dates, and then interpolate missing values
@@ -86,22 +108,22 @@ df <- data.frame(Date = date_range) %>%
   mutate(Value = na.approx(as.numeric(Value)))
 
 # save data into objects
-SOFR = xts(df$Value, order.by = df$Date) 
-SOFRData = select(df, Date, Value)
+SOFR <- xts(df$Value, order.by = df$Date) 
+SOFRData <- select(df, Date, Value)
 
 # 1.3 Exchange Rate USD CHF
 # Get data
-url = "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H10&series=f838388dca2fd4e8bdfb846f3d2c35df&lastobs=&from=01/01/1971&to=10/09/2024&filetype=csv&label=include&layout=seriescolumn"
-response = GET(url)
-data = content(response, "text")
+url <- "https://www.federalreserve.gov/datadownload/Output.aspx?rel=H10&series=f838388dca2fd4e8bdfb846f3d2c35df&lastobs=&from=01/01/1971&to=10/09/2024&filetype=csv&label=include&layout=seriescolumn"
+response <- GET(url)
+data <- content(response, "text")
 
 # Save a cache of the data
-timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
-filename = paste0("../cache/ER-", timestamp, ".csv")
+timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
+filename <- paste0("../cache/ER-", timestamp, ".csv")
 write(data, file = filename)
 
 # parse the file contents
-df = read_csv(data, skip = 6, col_types = "Dd", col_names = c("Date", "Value"), 
+df <- read_csv(data, skip = 6, col_types = "Dd", col_names = c("Date", "Value"), 
               na = c("", "ND", "."))
 
 # trim leading and ending NAs
@@ -114,14 +136,14 @@ df <- data.frame(Date = date_range) %>%
   mutate(Value = na.approx(as.numeric(Value)))
 
 # save data into objects
-ER = xts(df$Value, order.by = df$Date) 
-ERData = select(df, Date, Value)
+ER <- xts(df$Value, order.by = df$Date) 
+ERData <- select(df, Date, Value)
 
 # Additional processing for ERData
 ERData <- ERData %>%
   mutate(CHFUSD = 1 / Value,
-         LogCHFUSD = log(CHFUSD) * 100,
-         ForwardLogCHFUSD = lead(LogCHFUSD),
+         LogCHFUSD = log(CHFUSD) * 100, # in percent
+         ForwardLogCHFUSD = lead(LogCHFUSD), # lead is t+1
          LogDifferenceCHFUSD = ForwardLogCHFUSD - LogCHFUSD)
 
 # 1.4 Swiss Policy Actions
@@ -131,8 +153,8 @@ response <- GET(url)
 data <- content(response, "text")
 
 # Save a cache of the data
-timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
-filename = paste0("../cache/SwissPolicy1-", timestamp, ".csv")
+timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
+filename <- paste0("../cache/SwissPolicy1-", timestamp, ".csv")
 write(data, file = filename)
 
 # parse the file contents
@@ -145,11 +167,11 @@ df <- select(df, Date, Value)
 df <- na.trim(df)
 
 # save to xts object
-SwissPolicyRate = xts(df$Value, order.by = df$Date) 
+SwissPolicyRate <- xts(df$Value, order.by = df$Date) 
 
 # transformations to select policy changes
-SwissPolicyChange1 = ts_diff(SwissPolicyRate)
-SwissPolicyChange1 = subset(SwissPolicyChange1, value != 0)
+SwissPolicyChange1 <- ts_diff(SwissPolicyRate)
+SwissPolicyChange1 <- subset(SwissPolicyChange1, value != 0)
 
 # Get old data
 url <- "https://data.snb.ch/json/table/getFile?fileId=598a401ddfd66075bc2be3845d5f21e3ddf5e22d083ea30424af2e633e374778&pageViewTime=20231127_173150&lang=en"
@@ -157,8 +179,8 @@ response <- GET(url)
 data <- content(response, "text")
 
 # Save a cache of the data
-timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
-filename = paste0("../cache/SwissPolicy2-", timestamp, ".csv")
+timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
+filename <- paste0("../cache/SwissPolicy2-", timestamp, ".csv")
 write(data, file = filename)
 
 # parse the file contents
@@ -171,36 +193,33 @@ df <- select(df, Date, Value)
 df <- na.trim(df)
 
 # save to xts object
-SwissPolicyRate = xts(df$Value, order.by = df$Date) 
+SwissPolicyRate <- xts(df$Value, order.by = df$Date) 
 
 # transformations to select policy changes
-SwissPolicyChange2 = ts_diff(SwissPolicyRate)
-SwissPolicyChange2 = subset(SwissPolicyChange2, value != 0)
+SwissPolicyChange2 <- ts_diff(SwissPolicyRate)
+SwissPolicyChange2 <- subset(SwissPolicyChange2, value != 0)
 
 # combine old and new data
-SwissPolicyChange = rbind(SwissPolicyChange1, SwissPolicyChange2)
-
-# we're actually only interested in the dates here
-# the rest of the processing to select the dates is still to be done
+SwissPolicyChange <- rbind(SwissPolicyChange1, SwissPolicyChange2)
 
 # 1.5 USA Policy Actions
 # Get data
-url = "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1318&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=DFEDTARU&scale=left&cosd=2018-01-01&coed=2023-11-27&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily%2C%207-Day&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2023-11-27&revision_date=2023-11-27&nd=2008-12-16"
-response = GET(url)
-data = content(response, "text")
+url <- "https://fred.stlouisfed.org/graph/fredgraph.csv?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1318&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=DFEDTARU&scale=left&cosd=2018-01-01&coed=2023-11-27&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Daily%2C%207-Day&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2023-11-27&revision_date=2023-11-27&nd=2008-12-16"
+response <- GET(url)
+data <- content(response, "text")
 
 # Save a cache of the data
-timestamp = format(Sys.time(), "%Y%m%d-%H%M%S")
-filename = paste0("../cache/USPolicy-", timestamp, ".csv")
+timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
+filename <- paste0("../cache/USPolicy-", timestamp, ".csv")
 write(data, file = filename)
 
 # parse the file contents and save to objects
-df = read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"))
-USPolicyRate = xts(df$Value, order.by = df$Date) 
+df <- read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"))
+USPolicyRate <- xts(df$Value, order.by = df$Date) 
 
 # transformations to select policy changes
-USPolicyChange = ts_diff(USPolicyRate)
-USPolicyChange = subset(USPolicyChange, value != 0)
+USPolicyChange <- ts_diff(USPolicyRate)
+USPolicyChange <- subset(USPolicyChange, value != 0)
 
 # 1.6 Combining and trimming exchange rate and interest rate timeseries
 # Select and rename relevant columns
@@ -229,30 +248,32 @@ min(trimmedData$LogDifferenceCHFUSD, na.rm = TRUE)
 # Yes, the absolute values of the change are below 4% so well approximated by the log value
 
 # Calculate the interest rate differential
+# this is i^CH - i^US
 trimmedData <- trimmedData %>%
-  mutate(InterestRateDiff = SARON - SOFR)
+  mutate(IRd = SARON - SOFR)
 
 # split data into timeseries objects
-IRdifferential = xts(trimmedData$InterestRateDiff, order.by = trimmedData$Date)
-ERd = xts(trimmedData$LogDifferenceCHFUSD, order.by = trimmedData$Date)
+IRd <- xts(trimmedData$IRd, order.by = trimmedData$Date)
+ERd <- xts(trimmedData$LogDifferenceCHFUSD, order.by = trimmedData$Date)
 
 # check for stationarity with u Root test
-uRootER = CADFtest(ERd, max.lag.y = 10, type = "drift", criterion = "BIC")
+uRootER <- CADFtest(ERd, max.lag.y = 10, type = "drift", criterion = "BIC")
 summary(uRootER)
 # this is stationary, good!
-uRootIRd = CADFtest(IRdifferential, max.lag.y = 10, type = "drift", criterion = "BIC")
+uRootIRd <- CADFtest(IRd, max.lag.y = 10, type = "drift", criterion = "BIC")
 summary(uRootIRd)
 # this is not stationary, bad!
 # create a first difference variable
-IRdifferential_d = IRdifferential - lag(IRdifferential)
+# this is IRd_t - IRd_t-1 (lag 1)
+IRdd <- IRd - stats::lag(IRd)
 # check the first difference for 
-uRootFDIR = CADFtest(IRdifferential_d, max.lag.y = 10, type = "drift", criterion = "BIC")
+uRootFDIR <- CADFtest(IRdd, max.lag.y = 10, type = "drift", criterion = "BIC")
 summary(uRootFDIR)
 # great, this is now stationary
 
 # plot first difference of interest rate differential
-ts_plot(IRdifferential_d)
-p <- autoplot(IRdifferential_d)
+ts_plot(IRdd)
+p <- autoplot(IRdd)
 p <- ggLayout(p) +
   labs(title = "First differences of Interest Rate differential between Switzerland and USA") +
   scale_y_continuous(breaks = seq(-3, 3, by = 0.5)) +
@@ -272,7 +293,7 @@ ggsave(paste(outDir, "First_diff_log_exchange_rate.png", sep = "/"), plot = last
 
 # plot both the interest rates
 InterestRatesLong <- pivot_longer(trimmedData, cols = c(SARON, SOFR), names_to = "id", values_to = "value")
-InterestRatesLong = select(InterestRatesLong, Date, id, value)
+InterestRatesLong <- select(InterestRatesLong, Date, id, value)
 ts_plot(InterestRatesLong)
 p <- ggplot(InterestRatesLong, aes(x = Date, y = value, color = id)) +
   geom_line()
@@ -292,13 +313,13 @@ p
 ggsave(paste(outDir, "ACFExchangeRateDiff.png", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 # there is some AC, but we expect some in 300 cases
 
-plotACF(IRdifferential_d, 365)
+plotACF(IRdd, 365)
 ggsave(paste(outDir, "ACFInterestRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 # Similar to above, there is some autocorrelation.
 # The strongly negative anti-correlation on day 1 is concerning. It suggests
 # markets over-correct on news and then regress the day after...
 
-p <- plotCCF(ERd, IRdifferential_d, lag.max = 365)
+p <- plotCCF(ERd, IRdd, lag.max = 365)
 p <- ggLayout(p) +
   labs(title = "Cross Correlation Function of Interest Rate differential and Exchange Rate")
 p
@@ -311,9 +332,9 @@ ggsave(paste(outDir, "CCF.pdf", sep = "/"), plot = last_plot(), width = 21, heig
 
 # Perform simple regression analysis
 # THIS IS AN IN-SAMPLE TEST (BEST CASE)
-result <- lm(ERd ~ IRdifferential_d)
+result <- lm(ERd ~ IRdd)
 summary(result)
-# The p-value over 0.6 strongly implies no predictive power in the interest rates
+# The p-value over 0.5 strongly implies no predictive power in the interest rates
 
 # Check autocorrelation of residuals 
 pdf("residuals.pdf", width = 11.7, height = 8.3)
@@ -330,9 +351,8 @@ RMSFE2 = sqrt(MSFE2)
 MAFE2 = mean(abs(EmpiricalError))
 
 
-
 # Create forecast with theoretical model
-trimmedData$TheoryForecast = dplyr::lag(trimmedData$InterestRateDiff/365 + trimmedData$LogCHFUSD)
+trimmedData$TheoryForecast = dplyr::lag(trimmedData$IRd/365 + trimmedData$LogCHFUSD)
 trimmedData$TheoryCHFUSD = exp(trimmedData$TheoryForecast/100)
 CHFUSD = xts(trimmedData$CHFUSD, order.by = trimmedData$Date)
 TheoryCHFUSD = xts(trimmedData$TheoryCHFUSD, order.by = trimmedData$Date)
@@ -353,7 +373,7 @@ MAFE1 = mean(abs(TheoryError))
 
 # Fit ARIMA model for benchmark
 arima_model <- auto.arima(ERd, stepwise=TRUE, approximation=TRUE, ic = c("aic"))
-pdf("arima", width = 11.7, height = 8.3)
+pdf("arima.pdf", width = 11.7, height = 8.3)
 summary(arima_model)
 checkresiduals(arima_model)
 forecast <- forecast(arima_model, h = 365)
@@ -361,7 +381,7 @@ plot(forecast)
 dev.off()
 
 ARIMAError = arima_model$residuals
-ARIMAError = ts_span(ARIMAError, end = "2066")
+ARIMAError = ts_span(ARIMAError, end = "2067")
 ME3 = mean(ARIMAError)
 T=length(ARIMAError)
 FEV3 = var(ARIMAError)*(T-1)/T
@@ -372,7 +392,7 @@ MAFE3 = mean(abs(ARIMAError))
 # add random walk forecast, previous value
 trimmedData$RWForecast = dplyr::lag(trimmedData$LogCHFUSD)
 trimmedData$RWError = trimmedData$LogCHFUSD - trimmedData$RWForecast
-RWError = xts(trimmedData$RWError, order.by = trimmedData$Date)
+RWError = ts(trimmedData$RWError)
 RWError = na.trim(RWError)
 ME4 = mean(RWError)
 T=length(RWError)
@@ -390,6 +410,8 @@ Table = round(Table, 2)
 colnames(Table) = c("Theoretical", "Empirical", "AR(1)", "Random Walk")
 rownames(Table) = c("Share bias", "Share variance", "RMSFE", "MAFE")
 Table
+save(Table, file = "main_error_table.RData")
+
 
 # Diebold Mariano test
 DMTest1 = dm.test(EmpiricalError, ARIMAError, h = 1, power = 2)
@@ -453,27 +475,113 @@ ts_plot(
   subtitle = ""
 )
 
+
 # ------------------------------------------------------------------------------
-# TO-DO
+# 5) Narrow sample
 # ------------------------------------------------------------------------------
+# combine US and Swiss policy changes
+AllPolicyChange = rbind(USPolicyChange,SwissPolicyChange)
 
-#1 Create a benchmark and compare our model to the benchmark using 
-    # the tools from App7
+# extract the dates from the time series object
+dates <- as.Date(time(AllPolicyChange))
+# restrict the range to our sample range
+dates <- dates[dates >= first_valid_date & dates <= last_valid_date]
 
-#2 Create a rolling forecast that takes in the data available at each date to 
-    # predict the next dates (as in App7)
+# Function to get dates 2 days before and after a given date
+expand_dates <- function(date) {
+  seq(from = date - 2, to = date + 2, by = "days")
+}
 
-#3 Use the policy rate changes to restrict the time period to only those dates
-    # within 2 days of a policy change to look for impacts created by policy
+# Apply the function to each date and create a vector of all relevant dates
+expanded_dates <- unique(unlist(lapply(dates, expand_dates)))
 
-#4 There is a different data source for the SARON with the policy rate, I'm 
-    # curious to check whether it shows exactly the same data
-    # SARON2 <- df %>% filter(D0 == "SARON")
+filteredData <- trimmedData[trimmedData$Date %in% expanded_dates, ]
 
-#5 What if we create a "naive" UIP forecast, that is not based on a regression
-    # but just on the economic concept directly?
+IRd_narrow = xts(filteredData$IRd, order.by = filteredData$Date) 
+ERd_narrow = xts(filteredData$LogDifferenceCHFUSD, order.by = filteredData$Date)
 
-# 3 models: theoretical, estimated, AR(1)
-# 2 samples: full, policy dates
-# for both we compare errors
-# only for full sample we do rolling forecast
+result_narrow <- lm(ERd_narrow ~ IRd_narrow)
+summary(result_narrow)
+# p-value of 0.86 - not significant
+
+# Fit ARIMA model
+arima_model_narrow = Arima(ERd_narrow, order = c(1, 0, 0), include.constant= TRUE, method = "ML")
+pdf("arima_narrow.pdf", width = 11.7, height = 8.3)
+summary(arima_model_narrow)
+checkresiduals(arima_model_narrow)
+forecast <- forecast(arima_model_narrow, h = 365)
+plot(forecast)
+dev.off()
+
+arima_narrow_error = arima_model_narrow$residuals
+rw_narrow_error = ts(filteredData$RWError)
+theory_narrow_error = ts(filteredData$TheoryError)
+empirical_narrow_error = ts(result_narrow$residuals)
+
+calculate_error_measures <- function(error_series_list) {
+  # Check if the list has names
+  if(is.null(names(error_series_list))) {
+    stop("Please provide names for the error series in the list.")
+  }
+  
+  # Initialize a list to store calculated measures for each error series
+  measures_list <- list()
+  
+  for (error_series_name in names(error_series_list)) {
+    error_series <- error_series_list[[error_series_name]]
+    T <- length(error_series)
+    
+    ME <- mean(error_series)
+    FEV <- var(error_series) * (T - 1) / T
+    MSFE <- mean(error_series^2)
+    RMSFE <- sqrt(MSFE)
+    MAFE <- mean(abs(error_series))
+    
+    # Compute Share Bias and Share Variance
+    ShareBias <- ME^2 / MSFE
+    ShareVariance <- FEV / MSFE
+    
+    # Store the measures in the list
+    measures_list[[error_series_name]] <- c(ShareBias, ShareVariance, RMSFE, MAFE)
+  }
+  
+  # Convert the list to a data frame
+  error_table <- do.call(cbind, measures_list)
+  
+  # Set column and row names
+  rownames(error_table) <- c("Share bias", "Share variance", "RMSFE", "MAFE")
+  
+  # Round the table values
+  return(round(error_table, 2))
+}
+
+error_series_list <- list(
+  Theoretical = theory_narrow_error,
+  Empirical = empirical_narrow_error,
+  "AR(1)"= arima_narrow_error,
+  "Random Walk" = rw_narrow_error
+)
+
+error_table <- calculate_error_measures(error_series_list)
+print(error_table)
+save(error_table, file = "narrow_error_table.RData")
+
+dm_test_pairs <- function(error_list) {
+  if(is.null(names(error_list))) {
+    stop("Please provide names for the error series in the list.")
+  }
+  
+  n <- length(error_list)
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      model1_error <- error_list[[i]]
+      model2_error <- error_list[[j]]
+      test_result <- dm.test(model1_error, model2_error, h = 1, power = 2)
+      cat("DM Test between", names(error_list)[i], "and", names(error_list)[j], ":\n")
+      print(test_result)
+      cat("\n")
+    }
+  }
+}
+
+dm_test_pairs(error_series_list)
