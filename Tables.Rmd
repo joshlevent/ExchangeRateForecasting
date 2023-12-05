@@ -4,15 +4,27 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-load("ERFOutput/narrow_error_table.RData")
-```
-
-```{r table-output, echo=FALSE}
 library(knitr)
 library(kableExtra)
 
+load("ERFOutput/narrow_error_table.RData")
+load("ERFOutput/main_error_table.RData")
+```
+
+```{r table1-output, echo=FALSE}
 # Create the table with kable and kableExtra
-table <- kable(error_table, format = "latex", booktabs = TRUE) %>%
+table <- kable(Table, format = "latex", booktabs = TRUE, 
+               caption = "Whole Sample Model Errors") %>%
+  kable_styling(latex_options = c("striped", "scale_down"))
+
+# Print the table
+table
+```
+
+```{r table2-output, echo=FALSE}
+# Create the table with kable and kableExtra
+table <- kable(error_table, format = "latex", booktabs = TRUE, 
+               caption = "Policy Change Sample Model Errors") %>%
   kable_styling(latex_options = c("striped", "scale_down"))
 
 # Print the table
