@@ -1,6 +1,6 @@
 ---
 title: "Tables"
-output: bookdown::pdf_book
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -15,28 +15,22 @@ load("ERFOutput/dm_test_table.RData")
 ```
 
 ```{r table1-output, echo=FALSE}
-table <- kable(Table, booktabs = TRUE, 
-               caption = "Entire Sample Model Errors") %>%
-  kable_styling(latex_options = c("striped", "scale_down"))
+table <- kable(Table, booktabs = TRUE, caption = "Entire Sample Model Errors")
 
 table
 ```
 
 ```{r table2-output, echo=FALSE}
-table <- kable(error_table, booktabs = TRUE, 
-               caption = "Policy Change Sample Model Errors") %>%
-  kable_styling(latex_options = c("striped", "scale_down"))
+table <- kable(error_table, booktabs = TRUE, caption = "Policy Change Sample Model Errors")
 
 table
 ```
 
 ```{r table3-output, echo=FALSE}
-table <- kable(dm_test, booktabs = TRUE,
+table <- kable(dm_test, booktabs = TRUE, 
                caption = "Entire Sample Models Diebold Mariano Tests") %>%
-  kable_styling(latex_options = c("striped", "scale_down")) %>%
-  footnote(general = "Positive values indicate the Model in the column is better. P-values in parentheses.",
-           general_title = "Notes:",
-           footnote_as_chunk = T)
+  kable_styling(full_width = T) %>%
+  footnote(general = "Positive values indicate that the column model is better than the row model. P-values in parentheses.", general_title = "Notes:", footnote_as_chunk = T)
 
 table
 ```
@@ -44,10 +38,8 @@ table
 ```{r table4-output, echo=FALSE}
 table <- kable(narrow_dm_test, booktabs = TRUE,
                caption = "Policy Change Sample Models Diebold Mariano Tests") %>%
-  kable_styling(latex_options = c("striped", "scale_down")) %>%
-  footnote(general = "Positive values indicate the Model in the column is better. P-values in parentheses.",
-           general_title = "Notes:",
-           footnote_as_chunk = T)
+  kable_styling(full_width = T) %>%
+  footnote(general = "Positive values indicate that the column model is better than the row model. P-values in parentheses.", general_title = "Notes:", footnote_as_chunk = T)
 
 table
 ```
