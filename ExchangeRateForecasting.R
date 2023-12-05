@@ -10,6 +10,8 @@
 #         by ChatGPT. Below are ChatGPT transcripts of all interactions
 #         related to this in reverse chronological order.
 #
+#         https://chat.openai.com/share/03be357b-67a0-4917-8b0c-6dc983f33d40
+#         https://chat.openai.com/share/3c07f9b2-5317-4902-810c-0a5ee97c067d
 #         https://chat.openai.com/share/794b0c9a-8e88-4eae-a863-7c77249abcc5
 #         https://chat.openai.com/share/0d448d22-253f-46ae-8e69-77339fc7e4d1
 #         https://chat.openai.com/share/89488cba-2a6c-49ba-8745-1d6399eb5a70
@@ -25,7 +27,7 @@
 #         Professor, or written by hand.
 #
 # ------------------------------------------------------------------------------
-# 0) Packages and functions that we need
+#   0) Packages and functions that we need
 # ------------------------------------------------------------------------------
 library(readr)
 library(httr)
@@ -54,7 +56,7 @@ mainDir <- getwd()
 outDir <- makeOutDir(mainDir, "ERFOutput")
 
 # ------------------------------------------------------------------------------
-# 1) Data import, cleaning and preparation
+#   1) Data import, cleaning and preparation
 # ------------------------------------------------------------------------------
 
 # define locale for SNB imports
@@ -239,7 +241,7 @@ trimmedData <- combinedData %>% filter(Date >= first_valid_date & Date <= last_v
 
 
 # ------------------------------------------------------------------------------
-# 2) Initial checks and tests
+#   2) Initial checks and tests
 # ------------------------------------------------------------------------------
 
 # checking whether the log difference approximation is suitable
@@ -327,7 +329,7 @@ ggsave(paste(outDir, "CCF.pdf", sep = "/"), plot = last_plot(), width = 21, heig
 # Not more cross-correlation than could be expected by chance
 
 # ------------------------------------------------------------------------------
-# 3) Regression Analyses
+#   3) Regression Analyses
 # ------------------------------------------------------------------------------
 
 # Perform simple regression analysis
@@ -456,7 +458,7 @@ save(dm_test, file = "dm_test_table.RData")
 # because of the large sample
 
 # ------------------------------------------------------------------------------
-# 4) Rolling Forecast
+#   4) Rolling Forecast
 # ------------------------------------------------------------------------------
 
 #  we create a rolling AR(1) Forecast as a baseline
@@ -494,7 +496,7 @@ ts_plot(
 
 
 # ------------------------------------------------------------------------------
-# 5) Narrow sample
+#   5) Narrow sample
 # ------------------------------------------------------------------------------
 # combine US and Swiss policy changes
 AllPolicyChange = rbind(USPolicyChange,SwissPolicyChange)
