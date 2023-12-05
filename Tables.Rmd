@@ -1,32 +1,53 @@
 ---
 title: "Tables"
-output: pdf_document
+output: bookdown::pdf_book
 ---
 
 ```{r setup, include=FALSE}
 library(knitr)
 library(kableExtra)
-
+options(knitr.table.format = "latex")
 load("ERFOutput/narrow_error_table.RData")
 load("ERFOutput/main_error_table.RData")
+load("ERFOutput/narrow_dm_test_table.RData")
+load("ERFOutput/dm_test_table.RData")
+
 ```
 
 ```{r table1-output, echo=FALSE}
-# Create the table with kable and kableExtra
-table <- kable(Table, format = "latex", booktabs = TRUE, 
-               caption = "Whole Sample Model Errors") %>%
+table <- kable(Table, booktabs = TRUE, 
+               caption = "Entire Sample Model Errors") %>%
   kable_styling(latex_options = c("striped", "scale_down"))
 
-# Print the table
 table
 ```
 
 ```{r table2-output, echo=FALSE}
-# Create the table with kable and kableExtra
-table <- kable(error_table, format = "latex", booktabs = TRUE, 
+table <- kable(error_table, booktabs = TRUE, 
                caption = "Policy Change Sample Model Errors") %>%
   kable_styling(latex_options = c("striped", "scale_down"))
 
-# Print the table
+table
+```
+
+```{r table3-output, echo=FALSE}
+table <- kable(dm_test, booktabs = TRUE,
+               caption = "Entire Sample Models Diebold Mariano Tests") %>%
+  kable_styling(latex_options = c("striped", "scale_down")) %>%
+  footnote(general = "Positive values indicate the Model in the column is better. P-values in parentheses.",
+           general_title = "Notes:",
+           footnote_as_chunk = T)
+
+table
+```
+
+```{r table4-output, echo=FALSE}
+table <- kable(narrow_dm_test, booktabs = TRUE,
+               caption = "Policy Change Sample Models Diebold Mariano Tests") %>%
+  kable_styling(latex_options = c("striped", "scale_down")) %>%
+  footnote(general = "Positive values indicate the Model in the column is better. P-values in parentheses.",
+           general_title = "Notes:",
+           footnote_as_chunk = T)
+
 table
 ```

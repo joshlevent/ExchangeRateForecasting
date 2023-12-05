@@ -414,24 +414,41 @@ save(Table, file = "main_error_table.RData")
 
 
 # Diebold Mariano test
-DMTest1 = dm.test(EmpiricalError, ARIMAError, h = 1, power = 2)
-DMTest1
-# a p value of 0.89 suggests that the two forecasts are not significantly 
-# different from one another
-DMTest2 = dm.test(TheoryError, ARIMAError, h = 1, power = 2)
-DMTest2
+# a function allows us to test all combinations of a list
+dm_test_pairs <- function(error_list) {
+  if(is.null(names(error_list))) {
+    stop("Please provide names for the error series in the list.")
+  }
+  n <- length(error_list)
+  results_matrix <- matrix(NA, n, n, dimnames = list(names(error_list), names(error_list)))
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      model1_error <- error_list[[i]]
+      model2_error <- error_list[[j]]
+      test_result <- dm.test(model1_error, model2_error, h = 1, power = 2)
+      
+      results_matrix[i, j] <- paste(round(test_result$statistic, 3), " (", round(test_result$p.value, 2), ")", sep = "")
+      results_matrix[j, i] <- paste(round(test_result$statistic * -1, 3), " (", round(test_result$p.value, 2), ")", sep = "")
+    }
+  }
+  return(results_matrix)
+}
 
-DMTest3 = dm.test(RWError, ARIMAError, h = 1, power = 2)
-DMTest3
+errors_list <- list(
+  Theoretical = TheoryError,
+  Empirical = EmpiricalError,
+  "AR(1)"= ARIMAError,
+  "Random Walk" = RWError
+)
 
-DMTest4 = dm.test(RWError, TheoryError, h = 1, power = 2)
-DMTest4
+dm_test <- dm_test_pairs(errors_list)
+dm_test
+save(dm_test, file = "dm_test_table.RData")
 
-DMTest5 = dm.test(RWError, EmpiricalError, h = 1, power = 2)
-DMTest5
+# a p value of 0.89 for the DM test between the empirical model and the AR(1)
+# model suggests that the two forecasts are not significantly different from
+# one another
 
-DMTest6 = dm.test(TheoryError, EmpiricalError, h = 1, power = 2)
-DMTest6
 # The only significantly different models are the AR(1) and Theoretical Model
 # and the Random Walk and AR(1) models. In both cases the AR(1) model is better
 # The absolute values of the errors are very similar, therefore, likely this is
@@ -442,7 +459,7 @@ DMTest6
 # 4) Rolling Forecast
 # ------------------------------------------------------------------------------
 
-# First we create a rolling AR(1) Forecast as a baseline
+#  we create a rolling AR(1) Forecast as a baseline
 ER <- ts_span(ER, start = "2018-01-01")
 horizon <- 30
 ARFcst1 <- ER
@@ -566,22 +583,7 @@ error_table <- calculate_error_measures(error_series_list)
 print(error_table)
 save(error_table, file = "narrow_error_table.RData")
 
-dm_test_pairs <- function(error_list) {
-  if(is.null(names(error_list))) {
-    stop("Please provide names for the error series in the list.")
-  }
-  
-  n <- length(error_list)
-  for (i in 1:(n-1)) {
-    for (j in (i+1):n) {
-      model1_error <- error_list[[i]]
-      model2_error <- error_list[[j]]
-      test_result <- dm.test(model1_error, model2_error, h = 1, power = 2)
-      cat("DM Test between", names(error_list)[i], "and", names(error_list)[j], ":\n")
-      print(test_result)
-      cat("\n")
-    }
-  }
-}
 
-dm_test_pairs(error_series_list)
+narrow_dm_test <- dm_test_pairs(error_series_list)
+narrow_dm_test
+save(narrow_dm_test, file = "narrow_dm_test_table.RData")
