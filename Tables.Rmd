@@ -3,6 +3,10 @@ title: "Tables"
 output: pdf_document
 ---
 
+$$
+Y_{t+h} - Y_t = \alpha_h + \beta_h(i_t^A - i_t^B) + u_{t+h}
+$$
+
 ```{r setup, include=FALSE}
 library(knitr)
 library(kableExtra)
