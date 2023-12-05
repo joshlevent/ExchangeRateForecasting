@@ -15,6 +15,7 @@ load("ERFOutput/narrow_error_table.RData")
 load("ERFOutput/main_error_table.RData")
 load("ERFOutput/narrow_dm_test_table.RData")
 load("ERFOutput/dm_test_table.RData")
+load("ERFOutput/narrow_empirical_results.RData")
 
 ```
 
@@ -47,3 +48,13 @@ table <- kable(narrow_dm_test, booktabs = TRUE,
 
 table
 ```
+
+```{r table5-output, echo=FALSE}
+table <- kable(narrow_empirical_results, booktabs = TRUE,
+               caption = "Policy Change Sample Empirical Estimation Results") %>%
+  kable_styling(full_width = T) %>%
+  footnote(general = " ", general_title = "Notes:", footnote_as_chunk = T)
+
+table
+```
+

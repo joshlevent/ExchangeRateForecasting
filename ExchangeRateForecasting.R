@@ -82,7 +82,7 @@ df <- read_delim(data, delim = "; ", skip = 4,
 date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
 df <- data.frame(Date = date_range) %>% 
   left_join(df, by = "Date") %>%
-  mutate(Value = na.approx(as.numeric(Value)))
+  fill(Value, .direction = "down")
 
 # save data into objects
 SARON <- xts(df$Value, order.by = df$Date) 
@@ -107,7 +107,7 @@ df <- read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"),
 date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
 df <- data.frame(Date = date_range) %>% 
   left_join(df, by = "Date") %>%
-  mutate(Value = na.approx(as.numeric(Value)))
+  fill(Value, .direction = "down")
 
 # save data into objects
 SOFR <- xts(df$Value, order.by = df$Date) 
@@ -135,7 +135,7 @@ df <- na.trim(df)
 date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
 df <- data.frame(Date = date_range) %>% 
   left_join(df, by = "Date") %>%
-  mutate(Value = na.approx(as.numeric(Value)))
+  fill(Value, .direction = "down")
 
 # save data into objects
 ER <- xts(df$Value, order.by = df$Date) 
@@ -150,14 +150,22 @@ ERData <- ERData %>%
 
 # 1.4 Swiss Policy Actions
 # Get new data
+# NB: As of 05.12.2023 the url no longer works
+# there is a second url that works for now, but we expect it to stop working 
+# at some point as well.
+# Therefore, using the cache instead
 url <- "https://data.snb.ch/json/table/getFile?fileId=2eb5650771935a870db45db19f098567acfe49cf8e9872727243fc1885238707&pageViewTime=20231127_172937&lang=en"
+url <- "https://data.snb.ch/json/table/getFile?fileId=8fca4acf22ada6dbbce962c9c1e7e2e6a2bfa5383345bcfc638961dd7f0a3577&pageViewTime=20231205_165257&lang=en"
 response <- GET(url)
 data <- content(response, "text")
+data <- "../cache/SwissPolicy1-20231205-140338.csv"
+
 
 # Save a cache of the data
-timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
-filename <- paste0("../cache/SwissPolicy1-", timestamp, ".csv")
-write(data, file = filename)
+# don't save to cache when using cache
+# timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
+# filename <- paste0("../cache/SwissPolicy1-", timestamp, ".csv")
+# write(data, file = filename)
 
 # parse the file contents
 df <- read_delim(data, delim = ";", col_types = "Dcd", skip = 4, 
@@ -179,11 +187,14 @@ SwissPolicyChange1 <- subset(SwissPolicyChange1, value != 0)
 url <- "https://data.snb.ch/json/table/getFile?fileId=598a401ddfd66075bc2be3845d5f21e3ddf5e22d083ea30424af2e633e374778&pageViewTime=20231127_173150&lang=en"
 response <- GET(url)
 data <- content(response, "text")
+# currently the site gives an error, therefore we use the cache
+data <- "../cache/SwissPolicy2-20231205-140338.csv"
 
 # Save a cache of the data
-timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
-filename <- paste0("../cache/SwissPolicy2-", timestamp, ".csv")
-write(data, file = filename)
+# don't write back to cache, when using the cache
+#timestamp <- format(Sys.time(), "%Y%m%d-%H%M%S")
+#filename <- paste0("../cache/SwissPolicy2-", timestamp, ".csv")
+#write(data, file = filename)
 
 # parse the file contents
 df <- read_delim(data, delim = ";", col_types = "Dcd", skip = 4, 
@@ -281,7 +292,7 @@ p <- ggLayout(p) +
   scale_y_continuous(breaks = seq(-3, 3, by = 0.5)) +
   theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
 p
-ggsave(paste(outDir, "First_diff_interest_rate_differential.png", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+ggsave(paste(outDir, "First_diff_interest_rate_differential.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 
 # plot first difference of log exchange rates
 ts_plot(ERd)
@@ -291,7 +302,7 @@ p <- ggLayout(p) +
   scale_y_continuous(breaks = seq(-3, 3, by = 0.5)) +
   theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
 p
-ggsave(paste(outDir, "First_diff_log_exchange_rate.png", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
+ggsave(paste(outDir, "First_diff_log_exchange_rate.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
 
 # plot both the interest rates
 InterestRatesLong <- pivot_longer(trimmedData, cols = c(SARON, SOFR), names_to = "id", values_to = "value")
@@ -307,19 +318,6 @@ p <- ggLayout(p) +
   theme(panel.grid.minor.x = element_line(colour = "black",linewidth=0.1,linetype="dotted"))
 p
 ggsave(paste(outDir, "InterestRates.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
-
-p <- plotACF(ERd, 365)
-p <- ggLayout(p) +
-  labs(title = "Autocorrelation Function of first differences of log exchange rate")
-p
-ggsave(paste(outDir, "ACFExchangeRateDiff.png", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
-# there is some AC, but we expect some in 300 cases
-
-plotACF(IRdd, 365)
-ggsave(paste(outDir, "ACFInterestRateDiff.pdf", sep = "/"), plot = last_plot(), width = 21, height = 14.8, units = c("cm"))
-# Similar to above, there is some autocorrelation.
-# The strongly negative anti-correlation on day 1 is concerning. It suggests
-# markets over-correct on news and then regress the day after...
 
 p <- plotCCF(ERd, IRdd, lag.max = 365)
 p <- ggLayout(p) +
@@ -342,6 +340,7 @@ summary(result)
 pdf("residuals.pdf", width = 11.7, height = 8.3)
 checkresiduals(result)+theme_minimal()
 dev.off()
+# this checks for auto-correlation in the residuals, see slide 10 of 1.3.
 
 # calculate error measures for empirical model
 EmpiricalError = ts(result$residuals)
@@ -354,7 +353,8 @@ MAFE2 = mean(abs(EmpiricalError))
 
 
 # Create forecast with theoretical model
-trimmedData$TheoryForecast = dplyr::lag(trimmedData$IRd/365 + trimmedData$LogCHFUSD)
+trimmedData$DailyRate <- (1 + trimmedData$IRd / 100)^(1/365) - 1
+trimmedData$TheoryForecast = dplyr::lag(trimmedData$DailyRate + trimmedData$LogCHFUSD)
 trimmedData$TheoryCHFUSD = exp(trimmedData$TheoryForecast/100)
 CHFUSD = xts(trimmedData$CHFUSD, order.by = trimmedData$Date)
 TheoryCHFUSD = xts(trimmedData$TheoryCHFUSD, order.by = trimmedData$Date)
@@ -374,7 +374,7 @@ MAFE1 = mean(abs(TheoryError))
 
 
 # Fit ARIMA model for benchmark
-arima_model <- auto.arima(ERd, stepwise=TRUE, approximation=TRUE, ic = c("aic"))
+arima_model <- Arima(ERd, order = c(1, 0, 0), include.constant= FALSE, method = "ML")
 pdf("arima.pdf", width = 11.7, height = 8.3)
 summary(arima_model)
 checkresiduals(arima_model)
@@ -517,14 +517,26 @@ expanded_dates <- unique(unlist(lapply(dates, expand_dates)))
 filteredData <- trimmedData[trimmedData$Date %in% expanded_dates, ]
 
 IRd_narrow = xts(filteredData$IRd, order.by = filteredData$Date) 
+# as before we use the IRdd for the estimated model
+IRdd_narrow <- IRd_narrow - stats::lag(IRd_narrow)
 ERd_narrow = xts(filteredData$LogDifferenceCHFUSD, order.by = filteredData$Date)
 
-result_narrow <- lm(ERd_narrow ~ IRd_narrow)
-summary(result_narrow)
+result_narrow <- lm(ERd_narrow ~ IRdd_narrow)
+narrow_empirical_results <- summary(result_narrow)
+narrow_empirical_results
 # p-value of 0.86 - not significant
 
+# save to table if possible
+# save(narrow_empirical_results, file = "narrow_empirical_results.RData")
+
+# Check autocorrelation of residuals 
+pdf("residuals_narrow.pdf", width = 11.7, height = 8.3)
+checkresiduals(result_narrow)+theme_minimal()
+dev.off()
+# this checks for auto-correlation in the residuals, see slide 10 of 1.3.
+
 # Fit ARIMA model
-arima_model_narrow = Arima(ERd_narrow, order = c(1, 0, 0), include.constant= TRUE, method = "ML")
+arima_model_narrow = Arima(ERd_narrow, order = c(1, 0, 0), include.constant= FALSE, method = "ML")
 pdf("arima_narrow.pdf", width = 11.7, height = 8.3)
 summary(arima_model_narrow)
 checkresiduals(arima_model_narrow)
