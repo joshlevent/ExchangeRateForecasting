@@ -337,7 +337,7 @@ summary(result)
 # The p-value over 0.5 strongly implies no predictive power in the interest rates
 
 # Check autocorrelation of residuals 
-pdf("residuals.pdf", width = 11.7, height = 8.3)
+pdf("empirical_residuals.pdf", width = 11.7, height = 8.3)
 checkresiduals(result)+theme_minimal()
 dev.off()
 # this checks for auto-correlation in the residuals, see slide 10 of 1.3.
@@ -372,6 +372,12 @@ MSFE1 = mean(TheoryError^2)
 RMSFE1 = sqrt(MSFE1)
 MAFE1 = mean(abs(TheoryError))
 
+# Check residuals of theoretical model
+TheoryList = list(residuals = TheoryError)
+pdf("theoretical_residuals.pdf", width = 11.7, height = 8.3)
+checkresiduals(TheoryList)+theme_minimal()
+dev.off()
+
 
 # Fit ARIMA model for benchmark
 arima_model <- Arima(ERd, order = c(1, 0, 0), include.constant= FALSE, method = "ML")
@@ -402,6 +408,12 @@ FEV4 = var(RWError)*(T-1)/T
 MSFE4 = mean(RWError^2)
 RMSFE4 = sqrt(MSFE4)
 MAFE4 = mean(abs(RWError))
+
+# Check residuals of random walk model
+RWList = list(residuals = RWError)
+pdf("random_walk_residuals.pdf", width = 11.7, height = 8.3)
+checkresiduals(RWList)+theme_minimal()
+dev.off()
 
 # draw table of various error measures for all 3 models
 Table = c(ME1^2/MSFE1, ME2^2/MSFE2, ME3^2/MSFE3, ME4^2/MSFE4)
@@ -457,47 +469,11 @@ save(dm_test, file = "dm_test_table.RData")
 # a small difference in the error that is showing statistical significance
 # because of the large sample
 
-# ------------------------------------------------------------------------------
-#   4) Rolling Forecast
-# ------------------------------------------------------------------------------
-
-#  we create a rolling AR(1) Forecast as a baseline
-ER <- ts_span(ER, start = "2018-01-01")
-horizon <- 30
-ARFcst1 <- ER
-
-ARFcst1[] <- NA
-ARFcst14 <- ARFcst1
-ARFcst30 <- ARFcst1
-
-# Note that we can use maximum likelihood (ML) or conditional sum of squares 
-# (CSS). MLE is slower but usually yields more stable results
-myMethod = "CSS"
-for(smpEnd in seq(as.Date(first_valid_date+700), as.Date(last_valid_date), by = "day")){  
-  x = ts_ts(ts_span(ER, start = "2018-01-01", end = as.Date(smpEnd)))
-  refit = Arima(x, order = c(1, 0, 0), include.constant= TRUE, method = myMethod)
-  fcst = forecast(refit, h = horizon)
-
-  
-  ARFcst1[as.Date(index(ts_xts(fcst$mean))[1])] = fcst$mean[1]
-  ARFcst14[as.Date(index(ts_xts(fcst$mean))[14])] = fcst$mean[14]
-  ARFcst30[as.Date(index(ts_xts(fcst$mean))[30])] = fcst$mean[30]
-
-}
-
-ts_plot(
-  `Exchange rate` = ER,
-  `H = 1` = ARFcst1, 
-  `H = 14` = ARFcst14,
-  `H = 30` = ARFcst30, 
-  title = "Exchange rate and AR(1) Forecasts",
-  subtitle = ""
-)
-
 
 # ------------------------------------------------------------------------------
-#   5) Narrow sample
+#   4) Narrow sample
 # ------------------------------------------------------------------------------
+
 # combine US and Swiss policy changes
 AllPolicyChange = rbind(USPolicyChange,SwissPolicyChange)
 
@@ -514,20 +490,18 @@ expand_dates <- function(date) {
 # Apply the function to each date and create a vector of all relevant dates
 expanded_dates <- unique(unlist(lapply(dates, expand_dates)))
 
+trimmedData$IRdd = trimmedData$IRd - dplyr::lag(trimmedData$IRd)
 filteredData <- trimmedData[trimmedData$Date %in% expanded_dates, ]
 
 IRd_narrow = xts(filteredData$IRd, order.by = filteredData$Date) 
 # as before we use the IRdd for the estimated model
-IRdd_narrow <- IRd_narrow - stats::lag(IRd_narrow)
+IRdd_narrow <- xts(filteredData$IRdd, order.by = filteredData$Date) 
 ERd_narrow = xts(filteredData$LogDifferenceCHFUSD, order.by = filteredData$Date)
 
 result_narrow <- lm(ERd_narrow ~ IRdd_narrow)
 narrow_empirical_results <- summary(result_narrow)
 narrow_empirical_results
-# p-value of 0.86 - not significant
-
-# save to table if possible
-# save(narrow_empirical_results, file = "narrow_empirical_results.RData")
+# p-value of 0.96 - not significant
 
 # Check autocorrelation of residuals 
 pdf("residuals_narrow.pdf", width = 11.7, height = 8.3)
@@ -548,6 +522,18 @@ arima_narrow_error = arima_model_narrow$residuals
 rw_narrow_error = ts(filteredData$RWError)
 theory_narrow_error = ts(filteredData$TheoryError)
 empirical_narrow_error = ts(result_narrow$residuals)
+
+# check residuals for theoretical model
+theory_narrow_list = list(residuals = theory_narrow_error)
+pdf("theory_residuals_narrow.pdf", width = 11.7, height = 8.3)
+checkresiduals(theory_narrow_list)+theme_minimal()
+dev.off()
+
+# check residuals for rw model
+rw_narrow_list = list(residuals = rw_narrow_error)
+pdf("rw_residuals_narrow.pdf", width = 11.7, height = 8.3)
+checkresiduals(rw_narrow_list)+theme_minimal()
+dev.off()
 
 calculate_error_measures <- function(error_series_list) {
   # Check if the list has names
