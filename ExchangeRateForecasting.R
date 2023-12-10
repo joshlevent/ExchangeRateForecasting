@@ -44,6 +44,7 @@ library(forecast)
 library(lubridate)
 library(knitr)
 library(kableExtra)
+library(lmtest)
 
 # clean objects
 rm(list=ls())
@@ -417,6 +418,7 @@ arima_model <- Arima(ERd, order = c(1, 0, 0), include.constant= FALSE, method = 
 pdf("arima.pdf", width = 11.7, height = 8.3)
 summary(arima_model)
 checkresiduals(arima_model)
+coeftest(arima_model)
 forecast <- forecast(arima_model, h = 365)
 plot(forecast)
 dev.off()
@@ -496,11 +498,11 @@ save(dm_test, file = "dm_test_table.RData")
 # model suggests that the two forecasts are not significantly different from
 # one another
 
-# The only significantly different models are the AR(1) and Theoretical Model
-# and the Random Walk and AR(1) models. In both cases the AR(1) model is better
-# The absolute values of the errors are very similar, therefore, likely this is
-# a small difference in the error that is showing statistical significance
-# because of the large sample
+# When we interpolated the missing values linearly we found that the AR(1) model
+# was statistically significantly different from the Theoretical and Random Walk 
+# models. Given that this effect disappeared when choosing a different interpo-
+# lation method suggests that this was an artefact of the interpolation.
+
 
 
 # ------------------------------------------------------------------------------
@@ -547,6 +549,7 @@ arima_model_narrow = Arima(ERd_narrow, order = c(1, 0, 0), include.constant= FAL
 pdf("arima_narrow.pdf", width = 11.7, height = 8.3)
 summary(arima_model_narrow)
 checkresiduals(arima_model_narrow)
+coeftest(arima_model_narrow)
 forecast <- forecast(arima_model_narrow, h = 365)
 plot(forecast)
 dev.off()
