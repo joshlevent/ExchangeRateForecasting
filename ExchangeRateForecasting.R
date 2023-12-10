@@ -78,15 +78,26 @@ df <- read_delim(data, delim = "; ", skip = 4,
                  col_types = "Dd", col_names = c("Date", "Value"), 
                  locale = de_CH, col_select = c(1,2))
 
-# fill missing dates, and then interpolate missing values
-date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
+SARON <- xts(df$Value, order.by = df$Date) 
+SARON <- ts_span(SARON, start = "2018-04-03", end ="2023-11-30")
+
+summary(SARON)
+var(SARON)
+
+# fill missing dates
+date_range <- seq(from = as.Date("2018-04-03"), to = as.Date("2023-11-30"), by = "day")
 df <- data.frame(Date = date_range) %>% 
-  left_join(df, by = "Date") %>%
-  fill(Value, .direction = "down")
+  left_join(df, by = "Date")
+
+summary(df)
+
+# interpolate missing values
+df <- fill(df, Value, .direction = "down")
 
 # save data into objects
 SARON <- xts(df$Value, order.by = df$Date) 
 SARONData <- select(df, Date, Value)
+
 
 # 1.2 SOFR
 # Get data
@@ -103,15 +114,27 @@ write(data, file = filename)
 df <- read_csv(data, skip = 1, col_types = "Dd", col_names = c("Date", "Value"), 
               na = c("", "ND", "."))
 
-# fill missing dates, and then interpolate missing values
-date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
+# fill missing dates
+date_range <- seq(from = as.Date("2018-04-03"), to = as.Date("2023-11-30"), by = "day")
 df <- data.frame(Date = date_range) %>% 
-  left_join(df, by = "Date") %>%
-  fill(Value, .direction = "down")
+  left_join(df, by = "Date")
+
+# summary statistics
+SOFR <- xts(df$Value, order.by = df$Date) 
+SOFR <- na.remove(SOFR)
+summary(SOFR)
+var(SOFR)
+
+# interpolate missing values
+df <- fill(df, Value, .direction = "down")
 
 # save data into objects
 SOFR <- xts(df$Value, order.by = df$Date) 
 SOFRData <- select(df, Date, Value)
+
+# summary of interpolated data
+summary(SOFR)
+var(SOFR)
 
 # 1.3 Exchange Rate USD CHF
 # Get data
@@ -132,10 +155,18 @@ df <- read_csv(data, skip = 6, col_types = "Dd", col_names = c("Date", "Value"),
 df <- na.trim(df)
 
 # fill missing dates, and then interpolate missing values
-date_range <- seq(from = min(df$Date), to = max(df$Date), by = "day")
+date_range <- seq(from = as.Date("2018-04-03"), to = as.Date("2023-11-30"), by = "day")
 df <- data.frame(Date = date_range) %>% 
-  left_join(df, by = "Date") %>%
-  fill(Value, .direction = "down")
+  left_join(df, by = "Date")
+
+# summary statistics
+CHFUSD <- xts(1 / df$Value, order.by = df$Date)
+CHFUSD <- na.remove(CHFUSD)
+summary(CHFUSD)
+var(CHFUSD)
+plot(CHFUSD)
+
+df <- fill(df, Value, .direction = "down")
 
 # save data into objects
 ER <- xts(df$Value, order.by = df$Date) 
@@ -250,6 +281,8 @@ last_valid_date <- combinedData %>% filter(!is.na(SARON) & !is.na(SOFR) & !is.na
 # Trim data to valid range
 trimmedData <- combinedData %>% filter(Date >= first_valid_date & Date <= last_valid_date)
 
+# summary of final dataframe
+summary(trimmedData)
 
 # ------------------------------------------------------------------------------
 #   2) Initial checks and tests
@@ -389,7 +422,7 @@ plot(forecast)
 dev.off()
 
 ARIMAError = arima_model$residuals
-ARIMAError = ts_span(ARIMAError, end = "2067")
+ARIMAError = ts_span(ARIMAError, end = "2066")
 ME3 = mean(ARIMAError)
 T=length(ARIMAError)
 FEV3 = var(ARIMAError)*(T-1)/T
